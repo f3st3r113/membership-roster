@@ -1,0 +1,78 @@
+/* Printable membership roster - used on screen, in the PDF and in the saved HTML.
+   One table per membership status; the banner shows on page 1 only. */
+@page {
+  size: letter landscape;
+  margin: 0.25in 0.5in 0.9in;
+  @bottom-center {
+    content: "THIS INFORMATION IS CONFIDENTIAL AND FOR INTERNAL USE ONLY";
+    font: bold 11pt Calibri, Carlito, Arial, sans-serif; color: #444;
+  }
+  @bottom-right {
+    content: "Page " counter(page) " of " counter(pages);
+    font: 9.5pt Calibri, Carlito, Arial, sans-serif; color: #444;
+  }
+}
+
+* { box-sizing: border-box; }
+html, body { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+body {
+  margin: 0;
+  font-family: Calibri, Carlito, "Segoe UI", Helvetica, Arial, sans-serif;
+  font-size: 9pt;
+  color: #444;
+  background: #fff;
+}
+
+.screen-bar {
+  display: flex; gap: 14px; align-items: center; flex-wrap: wrap;
+  padding: 10px 16px; background: #f3f4f6; border-bottom: 1px solid #d1d5db; font-size: 14px;
+}
+.screen-bar a { color: #0f6b2f; }
+.screen-bar button { font: inherit; padding: 4px 12px; cursor: pointer; }
+.screen-bar span { margin-left: auto; color: #555; }
+@media print { .no-print { display: none !important; } }
+
+table.banner, table.roster { width: 10in; border-collapse: collapse; table-layout: fixed; }
+table.roster td, table.roster th { padding: 0 3px; vertical-align: bottom; text-align: left; overflow-wrap: anywhere; }
+
+/* banner (first page only) */
+table.banner td { background: #cbd4e4; padding: 3px 6px; vertical-align: middle; }
+table.banner td.logo { width: 0.7in; text-align: center; }
+table.banner img { width: 0.56in; height: 0.56in; display: block; margin: 0 auto; }
+table.banner td.title { text-align: center; font-size: 26pt; font-weight: 700; color: #595959; line-height: 1.1; }
+
+/* group heading: rule, "Cicero Volunteer Fire Department   <status>", rule, column names, rule */
+tr.toprule td { border-top: 3px solid #111; padding: 0; height: 0; line-height: 0; font-size: 0; }
+table.roster .subtitle-row > td { padding: 7px 0 5px 3in; text-align: left; font-size: 13pt; font-weight: 700; color: #595959; }
+.subtitle-row .dept { display: inline-block; width: 3.06in; }
+tr.head th { font-size: 8.5pt; font-weight: 700; color: #595959; padding-top: 2px; padding-bottom: 2px; }
+tr.head1 th { border-top: 3px solid #111; padding-top: 4px; }
+tr.head2 th { border-bottom: 3px solid #111; padding-bottom: 5px; }
+tr.head1 th.raise { vertical-align: top; }
+table.roster th.addr { padding-left: 14px; }
+.c { text-align: center !important; }
+.r { text-align: right !important; }
+
+/* members: two lines each, even rows shaded */
+tbody.member { break-inside: avoid; page-break-inside: avoid; }
+tbody.member td { font-size: 9pt; line-height: 13pt; color: #4a4a4a; vertical-align: top; }
+tbody.member tr.r1 td { padding-top: 4.8px; }
+tbody.member tr.r2 td { padding-bottom: 4.8px; border-bottom: 1px solid #222; }
+tbody.member tr.r1 td.job { border-bottom: 1px solid #222; }
+tbody.member:nth-of-type(even) td { background: #f1f1f1; }
+tbody.member td.name { font-weight: 700; color: #3d3d3d; }
+tbody.member td.mobile, tbody.member td.email { font-weight: 700; color: #3d3d3d; }
+tbody.member td.email { white-space: nowrap; padding-left: 0; padding-right: 0; }
+tbody.member td.job { line-height: 12pt; padding-top: 5px; white-space: pre-line; }  /* keep line breaks in multi-title entries */
+
+/* every status starts on a new page */
+table.roster ~ table.roster { break-before: page; page-break-before: always; }
+
+p.none { padding: 24px; color: #666; }
+
+@media screen {
+  body { min-width: 10.5in; }
+  table.banner, table.roster { margin: 0 auto; }
+  table.roster { margin-bottom: 36px; }
+  table.banner { margin-top: 12px; }
+}

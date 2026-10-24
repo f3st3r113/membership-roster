@@ -1,0 +1,48 @@
+{% extends "base.html" %}
+{% block title %}Members{% endblock %}
+{% block content %}
+<form method="get" class="filters card">
+  <input type="search" name="q" value="{{ q }}" placeholder="Search name, ID, phone, e-mail, city…" autofocus>
+  <select name="active" aria-label="Active filter">
+    <option value="1" {{ 'selected' if active == '1' }}>Active only</option>
+    <option value="0" {{ 'selected' if active == '0' }}>Inactive only</option>
+    <option value="all" {{ 'selected' if active == 'all' }}>All</option>
+  </select>
+  <select name="status" aria-label="Status filter">
+    <option value="">Any status</option>
+    {% for s in statuses %}<option {{ 'selected' if s == status }}>{{ s }}</option>{% endfor %}
+  </select>
+  <select name="station" aria-label="Station filter">
+    <option value="">Any station</option>
+    {% for s in stations %}<option value="{{ s }}" {{ 'selected' if s == station }}>Station {{ s }}</option>{% endfor %}
+  </select>
+  <button class="btn btn-primary">Filter</button>
+  <a class="btn btn-ghost" href="{{ url_for('members') }}">Reset</a>
+</form>
+
+<p class="count">{{ rows|length }} member{{ '' if rows|length == 1 else 's' }}</p>
+
+<div class="table-wrap">
+<table class="grid">
+  <thead>
+    <tr><th>Name</th><th>ID #</th><th>Status</th><th>Job Title</th><th>Stn</th><th>Mobile</th><th>E-mail</th><th>Active</th></tr>
+  </thead>
+  <tbody>
+  {% for m in rows %}
+    <tr>
+      <td><a href="{{ url_for('member_edit', member_id=m['id']) }}">{{ m['last_name'] }}{% if m['first_name'] %}, {{ m['first_name'] }}{% endif %}</a></td>
+      <td>{{ m['member_id'] }}</td>
+      <td>{{ m['status'] }}</td>
+      <td>{{ m['job_title']|oneline }}</td>
+      <td>{{ m['fire_station'] }}</td>
+      <td class="nowrap">{{ m['mobile_phone'] }}</td>
+      <td>{{ m['email'] }}</td>
+      <td>{{ '✓' if m['active'] else '' }}</td>
+    </tr>
+  {% else %}
+    <tr><td colspan="8" class="empty">No members match.</td></tr>
+  {% endfor %}
+  </tbody>
+</table>
+</div>
+{% endblock %}

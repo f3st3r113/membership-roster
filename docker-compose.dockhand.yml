@@ -1,0 +1,24 @@
+# For managing the stack from Dockhand (or any UI where you paste the compose text).
+#
+# A pasted stack has no project folder, so it cannot build the image itself. Build the image
+# once on the NAS first (see README, "Dockhand"):
+#     cd /volume1/docker/cfd-roster && sudo docker build -t cfd-roster:latest .
+#
+# Set these in the stack's Environment variables in Dockhand:
+#     CFD_ADMIN_PASSWORD   password for the first "admin" login (only read on first start)
+#     PUID / PGID          numeric owner of the data folder (run `id <user>` over SSH)
+services:
+  roster:
+    image: cfd-roster:latest
+    pull_policy: never            # the image is local; never try to pull it from Docker Hub
+    container_name: cfd-roster
+    restart: unless-stopped
+    ports:
+      - "8080:8000"               # change the left number if 8080 is taken
+    user: "${PUID:-1000}:${PGID:-1000}"
+    volumes:
+      - /volume1/docker/cfd-roster/data:/data    # absolute path: database + session key
+    environment:
+      CFD_ADMIN_USER: "admin"
+      CFD_ADMIN_PASSWORD: "${CFD_ADMIN_PASSWORD:-}"
+      CFD_COOKIE_SECURE: "${CFD_COOKIE_SECURE:-0}"

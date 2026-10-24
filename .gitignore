@@ -1,0 +1,11 @@
+# member data and secrets: never commit
+data/
+.env
+*.db
+*.db-wal
+*.db-shm
+.secret_key
+
+__pycache__/
+*.pyc
+*.zip

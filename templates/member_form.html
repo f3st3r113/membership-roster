@@ -1,0 +1,65 @@
+{% extends "base.html" %}
+{% block title %}{{ 'Edit member' if m else 'Add member' }}{% endblock %}
+{% block content %}
+{% set can_edit = current_user['can_edit'] %}
+{% set dis = '' if can_edit else 'disabled' %}
+<form method="post" class="member-form">
+  <input type="hidden" name="_csrf" value="{{ csrf_token() }}">
+
+  <div class="form-bar">
+    <label class="goto">Go to
+      <select onchange="if (this.value) location.href = this.value">
+        <option value=""></option>
+        {% for p in people %}
+          <option value="{{ url_for('member_edit', member_id=p['id']) }}">{{ p['last_name'] }}{% if p['first_name'] %}, {{ p['first_name'] }}{% endif %}</option>
+        {% endfor %}
+      </select>
+    </label>
+    {% if can_edit %}
+      <button class="btn btn-primary" name="action" value="save">Save</button>
+      <button class="btn" name="action" value="save_new">Save and New</button>
+    {% endif %}
+    {% if m and v.email %}<a class="btn" href="mailto:{{ v.email }}">E-mail</a>{% endif %}
+    {% if m %}<a class="btn" href="{{ url_for('member_vcard', member_id=m['id']) }}">Save as Contact (.vcf)</a>{% endif %}
+    <a class="btn btn-ghost" href="{{ url_for('members') }}">Close</a>
+  </div>
+
+  <div class="card form-grid">
+    <div class="col">
+      <label>ID # <input name="member_id" value="{{ v.member_id }}" {{ dis }}></label>
+      <label>Last Name <input name="last_name" value="{{ v.last_name }}" required {{ dis }}></label>
+      <label>First Name <input name="first_name" value="{{ v.first_name }}" {{ dis }}></label>
+      <label>Membership Status
+        <select name="status" {{ dis }}>
+          {% for s in statuses %}<option {{ 'selected' if s == v.status }}>{{ s }}</option>{% endfor %}
+        </select>
+      </label>
+      <label>Job Title <textarea name="job_title" rows="2" {{ dis }}>{{ v.job_title }}</textarea></label>
+      <label>Street <textarea name="address" rows="2" {{ dis }}>{{ v.address }}</textarea></label>
+      <label>City <input name="city" value="{{ v.city }}" {{ dis }}></label>
+      <div class="row2">
+        <label>State <input name="state" value="{{ v.state }}" {{ dis }}></label>
+        <label>Zip/Postal Code <input name="zip" value="{{ v.zip }}" {{ dis }}></label>
+      </div>
+      <label class="check"><input type="checkbox" name="active" value="1" {{ 'checked' if v.active }} {{ dis }}> Active</label>
+    </div>
+
+    <div class="col">
+      <label>Emergency Contact <input name="emergency_contact" value="{{ v.emergency_contact }}" {{ dis }}></label>
+      <label>Home Phone <input name="home_phone" value="{{ v.home_phone }}" {{ dis }}></label>
+      <label>Mobile Phone <input name="mobile_phone" value="{{ v.mobile_phone }}" {{ dis }}></label>
+      <label>E-mail <input name="email" type="email" value="{{ v.email }}" {{ dis }}></label>
+      <label>Fire Station <input name="fire_station" value="{{ v.fire_station }}" {{ dis }}></label>
+      <label>Notes <textarea name="notes" rows="9" {{ dis }}>{{ v.notes }}</textarea></label>
+    </div>
+  </div>
+</form>
+
+{% if m and can_edit %}
+<form method="post" action="{{ url_for('member_delete', member_id=m['id']) }}" class="delete-form"
+      onsubmit="return confirm('Permanently delete this member? Consider unchecking Active instead.')">
+  <input type="hidden" name="_csrf" value="{{ csrf_token() }}">
+  <button class="btn btn-danger">Delete member…</button>
+</form>
+{% endif %}
+{% endblock %}

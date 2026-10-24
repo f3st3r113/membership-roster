@@ -1,0 +1,66 @@
+{% extends "base.html" %}
+{% block title %}Users{% endblock %}
+{% block content %}
+<h2 class="page-title">Users</h2>
+
+<div class="table-wrap">
+<table class="grid users">
+  <thead><tr><th>Username</th><th>Role</th><th>Actions</th></tr></thead>
+  <tbody>
+  {% for u in users %}
+    <tr>
+      <td>{{ u['username'] }}{% if u['id'] == current_user['id'] %} <span class="you">(you)</span>{% endif %}</td>
+      <td>
+        <form method="post" action="{{ url_for('user_role', user_id=u['id']) }}" class="inline">
+          <input type="hidden" name="_csrf" value="{{ csrf_token() }}">
+          <select name="role" aria-label="Role for {{ u['username'] }}">
+            {% for key, label in roles.items() %}<option value="{{ key }}" {{ 'selected' if key == role_of(u) }}>{{ label }}</option>{% endfor %}
+          </select>
+          <button class="btn">Save</button>
+        </form>
+      </td>
+      <td class="actions">
+        <details>
+          <summary class="btn">Reset password</summary>
+          <form method="post" action="{{ url_for('user_password', user_id=u['id']) }}" class="stack">
+            <input type="hidden" name="_csrf" value="{{ csrf_token() }}">
+            <label>New password <input type="password" name="password" autocomplete="new-password" required></label>
+            <label>Confirm <input type="password" name="password2" autocomplete="new-password" required></label>
+            <button class="btn btn-primary">Set password</button>
+          </form>
+        </details>
+        {% if u['id'] != current_user['id'] %}
+        <form method="post" action="{{ url_for('user_delete', user_id=u['id']) }}" class="inline"
+              onsubmit="return confirm('Delete user {{ u['username']|e }}?')">
+          <input type="hidden" name="_csrf" value="{{ csrf_token() }}">
+          <button class="btn btn-danger">Delete</button>
+        </form>
+        {% endif %}
+      </td>
+    </tr>
+  {% endfor %}
+  </tbody>
+</table>
+</div>
+
+<h3 class="section-title">Add a user</h3>
+<form method="post" class="card add-user">
+  <input type="hidden" name="_csrf" value="{{ csrf_token() }}">
+  <label>Username <input name="username" value="{{ form.username }}" autocomplete="off" required></label>
+  <label>Role
+    <select name="role">
+      {% for key, label in roles.items() %}<option value="{{ key }}" {{ 'selected' if key == form.role }}>{{ label }}</option>{% endfor %}
+    </select>
+  </label>
+  <label>Password <input type="password" name="password" autocomplete="new-password" required></label>
+  <label>Confirm password <input type="password" name="password2" autocomplete="new-password" required></label>
+  <button class="btn btn-primary">Add user</button>
+</form>
+
+<p class="hint">
+  <strong>Administrator</strong> can edit members and manage users.
+  <strong>Editor</strong> can add, edit and delete members.
+  <strong>Viewer</strong> can search and view members and print the roster, but can't change anything.
+  Passwords need at least 10 characters. Changing someone's password signs them out of their other sessions.
+</p>
+{% endblock %}

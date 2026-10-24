@@ -1,0 +1,16 @@
+{% extends "base.html" %}
+{% block title %}My account{% endblock %}
+{% block content %}
+<h2 class="page-title">My account</h2>
+<p class="hint">Signed in as <strong>{{ current_user['username'] }}</strong> · {{ role }}</p>
+
+<form method="post" class="card login">
+  <h3 style="margin:0">Change password</h3>
+  <input type="hidden" name="_csrf" value="{{ csrf_token() }}">
+  <label>Current password <input type="password" name="current" autocomplete="current-password" required></label>
+  <label>New password <input type="password" name="password" autocomplete="new-password" required></label>
+  <label>Confirm new password <input type="password" name="password2" autocomplete="new-password" required></label>
+  <p class="hint" style="margin:0">At least {{ min_password }} characters.</p>
+  <button class="btn btn-primary">Change password</button>
+</form>
+{% endblock %}
