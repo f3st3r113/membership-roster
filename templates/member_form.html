@@ -7,14 +7,11 @@
   <input type="hidden" name="_csrf" value="{{ csrf_token() }}">
 
   <div class="form-bar">
-    <label class="goto">Go to
-      <select onchange="if (this.value) location.href = this.value">
-        <option value=""></option>
-        {% for p in people %}
-          <option value="{{ url_for('member_edit', member_id=p['id']) }}">{{ p['last_name'] }}{% if p['first_name'] %}, {{ p['first_name'] }}{% endif %}</option>
-        {% endfor %}
-      </select>
-    </label>
+    <div class="goto">
+      <label for="goto-q">Go to</label>
+      <input type="search" id="goto-q" placeholder="Type a name…" autocomplete="off" data-url="{{ url_for('member_search') }}">
+      <ul id="goto-results" class="goto-results" hidden></ul>
+    </div>
     {% if can_edit %}
       <button class="btn btn-primary" name="action" value="save">Save</button>
       <button class="btn" name="action" value="save_new">Save and New</button>

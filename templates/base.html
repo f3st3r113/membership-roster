@@ -55,6 +55,7 @@
     {% block content %}{% endblock %}
   </main>
   <script src="{{ url_for('static', filename='theme.js') }}"></script>
+  {% if current_user %}<script src="{{ url_for('static', filename='goto.js') }}"></script>{% endif %}
   {% if current_user and current_user['is_admin'] %}<script src="{{ url_for('static', filename='export.js') }}"></script>{% endif %}
 </body>
 </html>

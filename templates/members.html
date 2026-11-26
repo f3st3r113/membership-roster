@@ -21,7 +21,7 @@
   <a class="btn btn-ghost" href="{{ url_for('members') }}">Reset</a>
 </form>
 
-<p class="count">{{ rows|length }} member{{ '' if rows|length == 1 else 's' }}</p>
+<p class="count">{% if total %}Showing {{ first }}&ndash;{{ last }} of {{ total }} member{{ '' if total == 1 else 's' }}{% else %}0 members{% endif %}</p>
 
 <div class="table-wrap">
 <table class="grid">
@@ -46,4 +46,12 @@
   </tbody>
 </table>
 </div>
+
+{% if pages > 1 %}
+<nav class="pager" aria-label="Pages">
+  {% if page > 1 %}<a class="btn" href="{{ url_for('members', page=page-1, **filters) }}">&larr; Previous</a>{% endif %}
+  <span>Page {{ page }} of {{ pages }}</span>
+  {% if page < pages %}<a class="btn" href="{{ url_for('members', page=page+1, **filters) }}">Next &rarr;</a>{% endif %}
+</nav>
+{% endif %}
 {% endblock %}

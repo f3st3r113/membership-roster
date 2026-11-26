@@ -8,7 +8,7 @@ All data lives in a single `data/` folder, and member data is never part of this
 | Access | Web app |
 |---|---|
 | Contacts table | `members` table (import your Access export with `import-csv`; original IDs are kept) |
-| Contact details form | **Members** list (search, filters, columns fit their content) and the **Add/Update Member** form, with *Go to*, *Save and New*, *E-mail*, *Save as Contact (.vcf)* |
+| Contact details form | **Members** list (search, filters, 25 members per page, columns fit their content) and the **Add/Update Member** form, with *Go to*, *Save and New*, *E-mail*, *Save as Contact (.vcf)* |
 | Membership Roster report | **Save As PDF/Print**: active members grouped by membership status (each group on its own page), sorted by last/first name, banner on page 1, confidentiality footer and page numbers. Several job titles print on separate lines |
 | Welcome form buttons | Buttons across the top of every page |
 | Mobile Info export (MobileInfo.xlsx + PowerShell, mi.json) | **Export Mobile Info** (administrators only), see [Mobile Info](#mobile-info-mijson) |
@@ -179,6 +179,13 @@ Advanced → Reverse Proxy*) and set `CFD_COOKIE_SECURE=1`.
 Everything is in `data/cfd.db` (plus `data/.secret_key`, which only keeps people signed in). The database
 holds member data as readable text, so keep the folder's permissions tight and store backups somewhere safe.
 Stop the container, or use `sqlite3 data/cfd.db ".backup backup.db"`, for a consistent copy.
+
+## Privacy of the member list
+
+The Members page only sends one page of members (25 by default) to the browser, and the *Go to* box on the member
+form looks names up on demand (2+ characters, at most 10 results) instead of listing everyone. Nobody gets the
+whole roster in a single page or request. Change the page size with `CFD_PAGE_SIZE` (minimum 5). Anyone signed in can
+still page or search through the members their role allows, so access is controlled by who has a login.
 
 ## Layout tweaks
 

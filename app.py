@@ -16,11 +16,13 @@ from urllib.parse import urlparse
 
 import click
 from flask import (Flask, Response, abort, flash, g, redirect, render_template,
-                   request, session, url_for)
+                   jsonify, request, session, url_for)
 from werkzeug.security import check_password_hash, generate_password_hash
 
 BASE_DIR = Path(__file__).resolve().parent
 DB_PATH = Path(os.environ.get("CFD_DB", BASE_DIR / "data" / "cfd.db"))
+
+PAGE_SIZE = max(5, int(os.environ.get("CFD_PAGE_SIZE", "25")))  # members shown per page
 
 DEFAULT_STATUSES = [
     "01-Active Members",
@@ -469,19 +471,41 @@ def members():
     if station:
         sql += " AND fire_station = ?"
         params.append(station)
-    sql += " ORDER BY last_name COLLATE NOCASE, first_name COLLATE NOCASE"
-    rows = get_db().execute(sql, params).fetchall()
+    db = get_db()
+    total = db.execute("SELECT COUNT(*) FROM" + sql[len("SELECT * FROM"):], params).fetchone()[0]
+    pages = max(1, -(-total // PAGE_SIZE))
+    try:
+        page = min(max(1, int(request.args.get("page", "1"))), pages)
+    except ValueError:
+        page = 1
+    sql += " ORDER BY last_name COLLATE NOCASE, first_name COLLATE NOCASE LIMIT ? OFFSET ?"
+    rows = db.execute(sql, params + [PAGE_SIZE, (page - 1) * PAGE_SIZE]).fetchall()
+    first = (page - 1) * PAGE_SIZE + 1 if total else 0
+    filters = {k: v for k, v in (("q", q), ("active", active), ("status", status),
+                                 ("station", station)) if v}
     return render_template(
         "members.html", rows=rows, q=q, active=active, status=status, station=station,
         statuses=all_statuses(), stations=distinct_stations(),
+        total=total, page=page, pages=pages, first=first, last=first + len(rows) - 1 if rows else 0,
+        filters=filters,
     )
 
 
-def jump_list():
-    return get_db().execute(
+@app.route("/members/search.json")
+@login_required
+def member_search():
+    """Small on-demand lookup for the 'Go to' box: at most 10 names, only after 2+ characters."""
+    q = request.args.get("q", "").strip()
+    if len(q) < 2:
+        return jsonify([])
+    like = f"%{q}%"
+    rows = get_db().execute(
         "SELECT id, last_name, first_name FROM members "
-        "ORDER BY last_name COLLATE NOCASE, first_name COLLATE NOCASE"
-    ).fetchall()
+        "WHERE last_name LIKE ? OR first_name LIKE ? OR (first_name || ' ' || last_name) LIKE ? "
+        "ORDER BY last_name COLLATE NOCASE, first_name COLLATE NOCASE LIMIT 10", (like, like, like)).fetchall()
+    return jsonify([{"url": url_for("member_edit", member_id=r["id"]),
+                     "name": r["last_name"] + (", " + r["first_name"] if r["first_name"] else "")}
+                    for r in rows])
 
 
 def form_values(member=None):
@@ -536,8 +560,7 @@ def member_new():
             return redirect(url_for("member_edit", member_id=cur.lastrowid))
         for e in errors:
             flash(e, "error")
-    return render_template("member_form.html", m=None, v=values, statuses=all_statuses(),
-                           people=jump_list())
+    return render_template("member_form.html", m=None, v=values, statuses=all_statuses())
 
 
 @app.route("/members/<int:member_id>", methods=["GET", "POST"])
@@ -564,8 +587,7 @@ def member_edit(member_id):
             return redirect(url_for("member_edit", member_id=member_id))
         for e in errors:
             flash(e, "error")
-    return render_template("member_form.html", m=row, v=values, statuses=all_statuses(),
-                           people=jump_list())
+    return render_template("member_form.html", m=row, v=values, statuses=all_statuses())
 
 
 @app.route("/members/<int:member_id>/delete", methods=["POST"])

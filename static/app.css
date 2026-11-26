@@ -117,7 +117,6 @@ table.grid tbody tr:hover { background: var(--rowhover); }
 /* member form */
 .form-bar { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; margin-bottom: 12px; }
 .form-bar .goto { display: flex; align-items: center; gap: 8px; margin-right: 12px; color: var(--ink); }
-.form-bar .goto select { width: 220px; margin: 0; }
 .form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 28px; }
 .form-grid .col { display: grid; gap: 12px; align-content: start; }
 .row2 { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
@@ -165,3 +164,13 @@ form.stack { display: grid; gap: 8px; margin-top: 8px; padding: 12px; min-width:
 
 /* pages with wide tables (Members list) use the full window */
 main.wide { max-width: none; }
+
+/* pager + "Go to" lookup */
+.pager { display: flex; align-items: center; justify-content: center; gap: 14px; margin: 14px 0 0; color: var(--muted); }
+.form-bar .goto { position: relative; display: flex; align-items: center; gap: 8px; margin-right: 12px; color: var(--ink); }
+.form-bar .goto input { width: 220px; margin: 0; }
+.goto-results { position: absolute; top: 100%; left: 44px; z-index: 5; margin: 4px 0 0; padding: 4px 0; list-style: none;
+  min-width: 220px; background: var(--card); border: 1px solid var(--border); border-radius: 6px; box-shadow: 0 4px 14px rgba(0,0,0,.2); }
+.goto-results a { display: block; padding: 6px 12px; color: var(--ink); text-decoration: none; }
+.goto-results a:hover, .goto-results a:focus { background: var(--hover); }
+.goto-results .none { padding: 6px 12px; color: var(--muted); }
