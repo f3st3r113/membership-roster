@@ -8,7 +8,7 @@ All data lives in a single `data/` folder, and member data is never part of this
 | Access | Web app |
 |---|---|
 | Contacts table | `members` table (import your Access export with `import-csv`; original IDs are kept) |
-| Contact details form | **Members** list (search, filters, 25 members per page, columns fit their content) and the **Add/Update Member** form, with *Go to*, *Save and New*, *E-mail*, *Save as Contact (.vcf)* |
+| Contact details form | **Members** list (search, filters, 10/25/50/100 members per page (your choice is remembered), columns fit their content) and the **Add/Update Member** form, with *Go to*, *Save and New*, *E-mail*, *Save as Contact (.vcf)* |
 | Membership Roster report | **Save As PDF/Print**: active members grouped by membership status (each group on its own page), sorted by last/first name, banner on page 1, confidentiality footer and page numbers. Several job titles print on separate lines |
 | Welcome form buttons | Buttons across the top of every page |
 | Mobile Info export (MobileInfo.xlsx + PowerShell, mi.json) | **Export Mobile Info** (administrators only), see [Mobile Info](#mobile-info-mijson) |
@@ -182,9 +182,9 @@ Stop the container, or use `sqlite3 data/cfd.db ".backup backup.db"`, for a cons
 
 ## Privacy of the member list
 
-The Members page only sends one page of members (25 by default) to the browser, and the *Go to* box on the member
+The Members page only sends one page of members (10, 25, 50 or 100, chosen with the *per page* box; 25 by default) to the browser, and the *Go to* box on the member
 form looks names up on demand (2+ characters, at most 10 results) instead of listing everyone. Nobody gets the
-whole roster in a single page or request. Change the page size with `CFD_PAGE_SIZE` (minimum 5). Anyone signed in can
+whole roster in a single page or request. Change the default with `CFD_PAGE_SIZE` (one of 10, 25, 50, 100). Anyone signed in can
 still page or search through the members their role allows, so access is controlled by who has a login.
 
 ## Layout tweaks

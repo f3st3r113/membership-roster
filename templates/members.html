@@ -17,6 +17,9 @@
     <option value="">Any station</option>
     {% for s in stations %}<option value="{{ s }}" {{ 'selected' if s == station }}>Station {{ s }}</option>{% endfor %}
   </select>
+  <select name="per" aria-label="Members per page" title="Members per page" onchange="this.form.submit()">
+    {% for n in page_sizes %}<option value="{{ n }}" {{ 'selected' if n == per }}>{{ n }} per page</option>{% endfor %}
+  </select>
   <button class="btn btn-primary">Filter</button>
   <a class="btn btn-ghost" href="{{ url_for('members') }}">Reset</a>
 </form>

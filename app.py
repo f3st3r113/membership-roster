@@ -22,7 +22,13 @@ from werkzeug.security import check_password_hash, generate_password_hash
 BASE_DIR = Path(__file__).resolve().parent
 DB_PATH = Path(os.environ.get("CFD_DB", BASE_DIR / "data" / "cfd.db"))
 
-PAGE_SIZE = max(5, int(os.environ.get("CFD_PAGE_SIZE", "25")))  # members shown per page
+PAGE_SIZES = (10, 25, 50, 100)  # choices offered on the Members page
+try:
+    DEFAULT_PAGE_SIZE = int(os.environ.get("CFD_PAGE_SIZE", "25"))
+except ValueError:
+    DEFAULT_PAGE_SIZE = 25
+if DEFAULT_PAGE_SIZE not in PAGE_SIZES:
+    DEFAULT_PAGE_SIZE = 25
 
 DEFAULT_STATUSES = [
     "01-Active Members",
@@ -473,20 +479,26 @@ def members():
         params.append(station)
     db = get_db()
     total = db.execute("SELECT COUNT(*) FROM" + sql[len("SELECT * FROM"):], params).fetchone()[0]
-    pages = max(1, -(-total // PAGE_SIZE))
+    per = request.args.get("per", type=int)
+    if per in PAGE_SIZES:
+        session["per"] = per            # remembered for next time
+    else:
+        per = session.get("per") if session.get("per") in PAGE_SIZES else DEFAULT_PAGE_SIZE
+    pages = max(1, -(-total // per))
     try:
         page = min(max(1, int(request.args.get("page", "1"))), pages)
     except ValueError:
         page = 1
     sql += " ORDER BY last_name COLLATE NOCASE, first_name COLLATE NOCASE LIMIT ? OFFSET ?"
-    rows = db.execute(sql, params + [PAGE_SIZE, (page - 1) * PAGE_SIZE]).fetchall()
-    first = (page - 1) * PAGE_SIZE + 1 if total else 0
+    rows = db.execute(sql, params + [per, (page - 1) * per]).fetchall()
+    first = (page - 1) * per + 1 if total else 0
     filters = {k: v for k, v in (("q", q), ("active", active), ("status", status),
                                  ("station", station)) if v}
+    filters["per"] = per
     return render_template(
         "members.html", rows=rows, q=q, active=active, status=status, station=station,
         statuses=all_statuses(), stations=distinct_stations(),
-        total=total, page=page, pages=pages, first=first, last=first + len(rows) - 1 if rows else 0,
+        per=per, page_sizes=PAGE_SIZES, total=total, page=page, pages=pages, first=first, last=first + len(rows) - 1 if rows else 0,
         filters=filters,
     )
 

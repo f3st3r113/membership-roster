@@ -104,7 +104,7 @@ label > input, label > select, label > textarea { margin-top: 3px; color: var(--
 .login h2 { margin: 0; }
 
 /* member list */
-.filters { display: grid; grid-template-columns: 1fr auto auto auto auto auto; gap: 8px; align-items: center; }
+.filters { display: grid; grid-template-columns: 1fr auto auto auto auto auto auto; gap: 8px; align-items: center; }
 .count { color: var(--muted); margin: 12px 2px 6px; font-size: 14px; }
 .table-wrap { overflow-x: auto; background: var(--card); border: 1px solid var(--line); border-radius: 8px; }
 table.grid { min-width: 100%; width: max-content; border-collapse: collapse; font-size: 14px; }  /* columns fit their content */
