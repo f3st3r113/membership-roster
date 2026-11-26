@@ -24,10 +24,29 @@ All data lives in a single `data/` folder, and member data is never part of this
 | `templates/`, `static/` | Pages, stylesheets, scripts, logo |
 | `Dockerfile`, `requirements.txt` | How the image is built |
 | `docker-compose.yml` | For `docker compose up --build` from this folder |
-| `docker-compose.dockhand.yml` | Image-only stack to paste into Dockhand |
+| `docker-compose.ghcr.yml` | Stack that pulls the published image from ghcr.io (easiest; no clone or build) |
+| `docker-compose.dockhand.yml` | Image-only stack for an image you built yourself on the NAS |
+| `.github/workflows/docker.yml` | GitHub Action that builds and publishes the image |
 | `update.sh` | On the NAS: pull the latest code and rebuild the image |
 
-## Installing on a Synology NAS with Dockhand (full steps)
+## Installing from the published image (no clone, no build)
+
+Every change to `main` is built by GitHub Actions and published as
+`ghcr.io/f3st3r113/membership-roster:latest` (amd64 and arm64). Tag a release (`git tag v1.0.0 && git push --tags`)
+to also get a pinned `:1.0.0` image. With that, a stack is all you need, like most self-hosted apps.
+
+1. **One-time, on GitHub:** open the repo's **Actions** tab and confirm *Publish Docker image* ran green.
+   Then open your profile's **Packages → membership-roster → Package settings**:
+   * To let the NAS pull without logging in, set the package's visibility to **Public** (the image contains
+     only the app code, never member data; package visibility is separate from the repo's).
+   * Or keep it private and log the NAS in once (needs a personal access token with `read:packages`):
+     `echo <TOKEN> | sudo docker login ghcr.io -u f3st3r113 --password-stdin`
+2. **Prepare the data folder** (step 3 of the install above).
+3. **Dockhand:** create a normal stack and paste `docker-compose.ghcr.yml`. Add `PUID`, `PGID`,
+   `CFD_ADMIN_PASSWORD` and `CFD_COOKIE_SECURE`. Deploy.
+4. **Update:** redeploy the stack. It always pulls the newest `:latest` (or change the tag to pin a version).
+
+## Installing on a Synology NAS with Dockhand (build it yourself)
 
 A stack pasted into Dockhand has no project folder, so it cannot build the image (you would get
 `failed to read dockerfile`). So the image is built once on the NAS, and Dockhand only runs it.
