@@ -1,0 +1,25 @@
+# Deploy from the published image: no cloning, no manual build. Paste into a Dockhand stack
+# (or any compose UI). The image is built by GitHub Actions on every change to main.
+#
+# Set these in the stack's Environment variables:
+#     PUID / PGID          numeric owner of the data folder (run `id <user>` over SSH)
+#     CFD_ADMIN_PASSWORD   password for the first "admin" login (only read on first start)
+#     CFD_COOKIE_SECURE    1 once served over HTTPS (default 0)
+#
+# To update: redeploy the stack. pull_policy "always" fetches the newest image each time.
+# To pin a version instead of following main, use e.g. :1.2.3 in place of :latest.
+services:
+  roster:
+    image: ghcr.io/f3st3r113/membership-roster:latest
+    pull_policy: always
+    container_name: cfd-roster
+    restart: unless-stopped
+    ports:
+      - "8080:8000"               # change the left number if 8080 is taken
+    user: "${PUID:-1000}:${PGID:-1000}"
+    volumes:
+      - /volume1/docker/cfd-roster/data:/data    # database + session key
+    environment:
+      CFD_ADMIN_USER: "admin"
+      CFD_ADMIN_PASSWORD: "${CFD_ADMIN_PASSWORD:-}"
+      CFD_COOKIE_SECURE: "${CFD_COOKIE_SECURE:-0}"
