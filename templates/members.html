@@ -17,9 +17,6 @@
     <option value="">Any station</option>
     {% for s in stations %}<option value="{{ s }}" {{ 'selected' if s == station }}>Station {{ s }}</option>{% endfor %}
   </select>
-  <select name="per" aria-label="Members per page" title="Members per page" onchange="this.form.submit()">
-    {% for n in page_sizes %}<option value="{{ n }}" {{ 'selected' if n == per }}>{{ n }} per page</option>{% endfor %}
-  </select>
   <button class="btn btn-primary">Filter</button>
   <a class="btn btn-ghost" href="{{ url_for('members') }}">Reset</a>
 </form>
@@ -50,11 +47,19 @@
 </table>
 </div>
 
-{% if pages > 1 %}
-<nav class="pager" aria-label="Pages">
-  {% if page > 1 %}<a class="btn" href="{{ url_for('members', page=page-1, **filters) }}">&larr; Previous</a>{% endif %}
-  <span>Page {{ page }} of {{ pages }}</span>
-  {% if page < pages %}<a class="btn" href="{{ url_for('members', page=page+1, **filters) }}">Next &rarr;</a>{% endif %}
-</nav>
-{% endif %}
+<div class="list-footer">
+  <nav class="pager" aria-label="Pages">
+    {% if page > 1 %}<a class="btn" href="{{ url_for('members', page=page-1, **filters) }}">&larr; Previous</a>{% endif %}
+    {% if pages > 1 %}<span>Page {{ page }} of {{ pages }}</span>{% endif %}
+    {% if page < pages %}<a class="btn" href="{{ url_for('members', page=page+1, **filters) }}">Next &rarr;</a>{% endif %}
+  </nav>
+  <form method="get" class="perpage">
+    {% for k, v in filters.items() if k != 'per' %}<input type="hidden" name="{{ k }}" value="{{ v }}">{% endfor %}
+    <label for="per">Show</label>
+    <select name="per" id="per" onchange="this.form.submit()">
+      {% for n in page_sizes %}<option value="{{ n }}" {{ 'selected' if n == per }}>{{ n }}</option>{% endfor %}
+    </select>
+    <span>per page</span>
+  </form>
+</div>
 {% endblock %}

@@ -104,7 +104,7 @@ label > input, label > select, label > textarea { margin-top: 3px; color: var(--
 .login h2 { margin: 0; }
 
 /* member list */
-.filters { display: grid; grid-template-columns: 1fr auto auto auto auto auto auto; gap: 8px; align-items: center; }
+.filters { display: grid; grid-template-columns: 1fr auto auto auto auto auto; gap: 8px; align-items: center; }
 .count { color: var(--muted); margin: 12px 2px 6px; font-size: 14px; }
 .table-wrap { overflow-x: auto; background: var(--card); border: 1px solid var(--line); border-radius: 8px; }
 table.grid { min-width: 100%; width: max-content; border-collapse: collapse; font-size: 14px; }  /* columns fit their content */
@@ -166,7 +166,12 @@ form.stack { display: grid; gap: 8px; margin-top: 8px; padding: 12px; min-width:
 main.wide { max-width: none; }
 
 /* pager + "Go to" lookup */
-.pager { display: flex; align-items: center; justify-content: center; gap: 14px; margin: 14px 0 0; color: var(--muted); }
+.list-footer { position: relative; display: flex; align-items: center; justify-content: center; gap: 14px; margin: 14px 0 0; min-height: 38px; color: var(--muted); }
+.pager { display: flex; align-items: center; gap: 14px; }
+.perpage { position: absolute; right: 0; top: 50%; transform: translateY(-50%); display: flex; align-items: center; gap: 8px; margin: 0; }
+.perpage label { display: inline; font-size: inherit; color: inherit; }
+.perpage select { width: auto; margin: 0; }
+@media (max-width: 760px) { .list-footer { flex-direction: column; } .perpage { position: static; transform: none; } }
 .form-bar .goto { position: relative; display: flex; align-items: center; gap: 8px; margin-right: 12px; color: var(--ink); }
 .form-bar .goto input { width: 220px; margin: 0; }
 .goto-results { position: absolute; top: 100%; left: 44px; z-index: 5; margin: 4px 0 0; padding: 4px 0; list-style: none;

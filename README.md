@@ -182,7 +182,7 @@ Stop the container, or use `sqlite3 data/cfd.db ".backup backup.db"`, for a cons
 
 ## Privacy of the member list
 
-The Members page only sends one page of members (10, 25, 50 or 100, chosen with the *per page* box; 25 by default) to the browser, and the *Go to* box on the member
+The Members page only sends one page of members (10, 25, 50 or 100, chosen with the *Show ... per page* box at the bottom of the list; 25 by default) to the browser, and the *Go to* box on the member
 form looks names up on demand (2+ characters, at most 10 results) instead of listing everyone. Nobody gets the
 whole roster in a single page or request. Change the default with `CFD_PAGE_SIZE` (one of 10, 25, 50, 100). Anyone signed in can
 still page or search through the members their role allows, so access is controlled by who has a login.
