@@ -3,17 +3,18 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Cicero Volunteer Fire Department Membership Roster</title>
+  <title>{{ cfg.formal_name }} Membership Roster</title>
   {% if inline %}<style>{{ css|safe }}</style>{% else %}<link rel="stylesheet" href="{{ url_for('static', filename='roster.css') }}">{% endif %}
   <style>@page { @bottom-left { content: "{{ date_str }}"; font: 9.5pt Calibri, Carlito, Arial, sans-serif; color: #444; } }</style>
-  {% set logo_src = logo if inline else url_for('static', filename='logo.png') %}
+  <style>table.banner td { background: {{ cfg.roster_banner_color }}; }</style>
+  {% set logo_src = logo if inline else url_for('branding_logo') %}
 </head>
 <body>
 {# Banner appears once, on the first page only #}
 <table class="banner">
   <tr>
     <td class="logo"><img src="{{ logo_src }}" alt=""></td>
-    <td class="title">Cicero Volunteer Fire Department Membership Roster</td>
+    <td class="title">{{ cfg.formal_name }} Membership Roster</td>
     <td class="logo"><img src="{{ logo_src }}" alt=""></td>
   </tr>
 </table>
@@ -28,7 +29,7 @@
   </colgroup>
   <thead>
     <tr class="toprule"><td colspan="10"></td></tr>
-    <tr class="subtitle-row"><td colspan="10"><span class="dept">Cicero Volunteer Fire Department</span><span class="group-name">{{ status|group_name }}</span></td></tr>
+    <tr class="subtitle-row"><td colspan="10"><span class="dept">{{ cfg.formal_name }}</span><span class="group-name">{{ status|group_name }}</span></td></tr>
     <tr class="head head1">
       <th>Last Name</th><th>First Name</th><th class="raise c">Emergency Contact</th><th>ID #</th>
       <th class="addr">Address</th><th>City</th><th class="c">State</th><th class="c">ZIP Code</th>

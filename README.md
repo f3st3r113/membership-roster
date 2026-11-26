@@ -24,6 +24,7 @@ All data lives in a single `data/` folder, and member data is never part of this
 | `templates/`, `static/` | Pages, stylesheets, scripts, logo |
 | `Dockerfile`, `requirements.txt` | How the image is built |
 | `docker-compose.yml` | For `docker compose up --build` from this folder |
+| `config.default.yaml`, `config.py` | Template and loader for the settings file (see [Settings](#settings-configyaml)) |
 | `docker-compose.ghcr.yml` | Stack that pulls the published image from ghcr.io (easiest; no clone or build) |
 | `docker-compose.dockhand.yml` | Image-only stack for an image you built yourself on the NAS |
 | `.github/workflows/docker.yml` | GitHub Action that builds and publishes the image |
@@ -205,6 +206,26 @@ The Members page only sends one page of members (10, 25, 50 or 100, chosen with 
 form looks names up on demand (2+ characters, at most 10 results) instead of listing everyone. Nobody gets the
 whole roster in a single page or request. Change the default with `CFD_PAGE_SIZE` (one of 10, 25, 50, 100). Anyone signed in can
 still page or search through the members their role allows, so access is controlled by who has a login.
+
+## Settings (config.yaml)
+
+Branding and membership groups are set in `config.yaml`, which lives in the data folder next to `cfd.db`
+(for example `/volume1/docker/cfd-roster/data/config.yaml`). It is created automatically on first start from
+`config.default.yaml`, and edits apply within moments, no restart needed.
+
+| Setting | What it does |
+|---|---|
+| `department_name` | Page banner, browser tab titles |
+| `formal_name` | Printed/PDF roster and contact cards (.vcf). Optional, defaults to `department_name` |
+| `logo_file` | Logo image (png, jpg, gif, svg, webp; max 2 MB). A plain file name is looked up in the data folder; if missing, the built-in logo is used |
+| `theme_color` | Hex color for the banner, buttons and links (for example `"#1d9a45"`). Dark mode adjusts it automatically. White text is drawn on it, so pick a medium or dark color |
+| `roster_banner_color` | Hex color of the banner strip on the printed roster |
+| `groups` | Membership groups in the order shown. The number prefix sorts them and is hidden on the printed roster; the first is the default for new members |
+
+A bad value is ignored (the default is used) and a warning is written to the container log
+(`sudo docker logs cfd-roster`). Members whose group is not in the list still appear everywhere; the list only
+controls what is offered for new entries and which names the Access import recognises.
+To change the logo, copy the image into the data folder and set `logo_file` to its name.
 
 ## Layout tweaks
 

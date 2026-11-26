@@ -3,8 +3,8 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>{% block title %}Membership Roster{% endblock %} · Cicero Fire Department</title>
-  <link rel="icon" href="{{ url_for('static', filename='logo.png') }}">
+  <title>{% block title %}Membership Roster{% endblock %} · {{ cfg.department_name }}</title>
+  <link rel="icon" href="{{ url_for('branding_logo') }}">
   <script>
     // apply the saved (or system) theme before first paint to avoid a flash
     (function () {
@@ -17,11 +17,15 @@
     })();
   </script>
   <link rel="stylesheet" href="{{ url_for('static', filename='app.css') }}">
+  <style>
+    :root { --green: {{ cfg.css_vars.light['--green'] }}; --green-dark: {{ cfg.css_vars.light['--green-dark'] }}; --focus: {{ cfg.css_vars.light['--focus'] }}; }
+    :root[data-theme="dark"] { --green: {{ cfg.css_vars.dark['--green'] }}; --green-dark: {{ cfg.css_vars.dark['--green-dark'] }}; --focus: {{ cfg.css_vars.dark['--focus'] }}; }
+  </style>
 </head>
 <body>
   <header class="banner">
-    <img src="{{ url_for('static', filename='logo.png') }}" alt="" class="banner-logo">
-    <h1>Cicero Fire Department <span>·</span> Membership Roster</h1>
+    <img src="{{ url_for('branding_logo') }}" alt="" class="banner-logo">
+    <h1>{{ cfg.department_name }} <span>·</span> Membership Roster</h1>
     <div class="banner-right">
       {% if current_user %}
       <form method="post" action="{{ url_for('logout') }}" class="logout">

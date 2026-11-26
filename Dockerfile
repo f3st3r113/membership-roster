@@ -9,7 +9,7 @@ WORKDIR /app
 COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
-COPY app.py .
+COPY app.py config.py config.default.yaml ./
 COPY templates templates
 COPY static static
 

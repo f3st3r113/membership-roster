@@ -11,16 +11,19 @@ import time
 from datetime import date
 from functools import wraps
 from itertools import groupby
+from types import SimpleNamespace
 from pathlib import Path
 from urllib.parse import urlparse
 
 import click
+import config as settings
 from flask import (Flask, Response, abort, flash, g, redirect, render_template,
                    jsonify, request, session, url_for)
 from werkzeug.security import check_password_hash, generate_password_hash
 
 BASE_DIR = Path(__file__).resolve().parent
 DB_PATH = Path(os.environ.get("CFD_DB", BASE_DIR / "data" / "cfd.db"))
+CONFIG_PATH = Path(os.environ.get("CFD_CONFIG", DB_PATH.parent / "config.yaml"))
 
 PAGE_SIZES = (10, 25, 50, 100)  # choices offered on the Members page
 try:
@@ -29,18 +32,6 @@ except ValueError:
     DEFAULT_PAGE_SIZE = 25
 if DEFAULT_PAGE_SIZE not in PAGE_SIZES:
     DEFAULT_PAGE_SIZE = 25
-
-DEFAULT_STATUSES = [
-    "01-Active Members",
-    "02-Junior Members",
-    "03-In-Active Life Members",
-    "05-Fire Chiefs",
-    "06-Commissioners",
-    "07-Auxiliary Members",
-    "08-Honorary Members",
-    "09-Line of Duty Family",
-    "10-Hall Coordinator",
-]
 
 # (column, label, max length)
 TEXT_FIELDS = [
@@ -200,12 +191,17 @@ def csrf_protect():
             abort(400, "Invalid or missing form token. Go back, reload the page and try again.")
 
 
+def cfg():
+    """Current settings from config.yaml (re-read automatically when the file changes)."""
+    return SimpleNamespace(**settings.get_config(CONFIG_PATH))
+
+
 @app.after_request
 def security_headers(resp):
     resp.headers["X-Frame-Options"] = "DENY"
     resp.headers["X-Content-Type-Options"] = "nosniff"
     resp.headers["Referrer-Policy"] = "no-referrer"
-    if not request.path.startswith("/static/"):
+    if not request.path.startswith(("/static/", "/branding/")):
         resp.headers["Cache-Control"] = "no-store"  # pages contain personal data
     return resp
 
@@ -217,7 +213,18 @@ def inject_helpers():
             session["_csrf"] = secrets.token_hex(16)
         return session["_csrf"]
 
-    return {"csrf_token": csrf_token, "current_user": g.get("user")}
+    return {"csrf_token": csrf_token, "current_user": g.get("user"), "cfg": cfg()}
+
+
+@app.route("/branding/logo")
+def branding_logo():
+    """The department logo from config.yaml (also used on the sign-in page, so no login needed)."""
+    data, mime = settings.logo(settings.get_config(CONFIG_PATH))
+    resp = Response(data, mimetype=mime)
+    resp.headers["Cache-Control"] = "no-cache"  # revalidate, so a changed logo shows up right away
+    resp.headers["Content-Security-Policy"] = "default-src 'none'; style-src 'unsafe-inline'; sandbox"  # SVG logos cannot run scripts
+    resp.add_etag()
+    return resp.make_conditional(request)
 
 
 @app.template_filter("oneline")
@@ -442,7 +449,7 @@ def account():
 # --------------------------------------------------------------------------
 def all_statuses():
     rows = get_db().execute("SELECT DISTINCT status FROM members WHERE status <> ''").fetchall()
-    return sorted(set(DEFAULT_STATUSES) | {r["status"] for r in rows})
+    return sorted(set(cfg().groups) | {r["status"] for r in rows})
 
 
 def distinct_stations():
@@ -523,7 +530,7 @@ def member_search():
 def form_values(member=None):
     if member is not None:
         return {c: member[c] for c, _, _ in TEXT_FIELDS} | {"active": bool(member["active"])}
-    return {c: "" for c, _, _ in TEXT_FIELDS} | {"status": DEFAULT_STATUSES[0], "active": True}
+    return {c: "" for c, _, _ in TEXT_FIELDS} | {"status": cfg().groups[0], "active": True}
 
 
 def format_phone(raw):
@@ -627,7 +634,7 @@ def member_vcard(member_id):
         "BEGIN:VCARD", "VERSION:3.0",
         f"N:{e(m['last_name'])};{e(m['first_name'])};;;",
         f"FN:{e((m['first_name'] + ' ' + m['last_name']).strip())}",
-        "ORG:Cicero Volunteer Fire Department",
+        f"ORG:{e(cfg().formal_name)}",
     ]
     if m["job_title"]:
         lines.append(f"TITLE:{e(oneline(m['job_title']))}")
@@ -664,8 +671,8 @@ def render_roster(inline):
     css = logo = None
     if inline:  # self-contained page for PDF / saved HTML
         css = (BASE_DIR / "static" / "roster.css").read_text()
-        logo = "data:image/png;base64," + base64.b64encode(
-            (BASE_DIR / "static" / "logo.png").read_bytes()).decode()
+        data, mime = settings.logo(settings.get_config(CONFIG_PATH))
+        logo = f"data:{mime};base64," + base64.b64encode(data).decode()
     return render_template("roster.html", groups=groups, total=len(rows), inline=inline, css=css,
                            logo=logo, date_str=f"{today.month}/{today.day}/{today.year}")
 
@@ -785,7 +792,7 @@ STATE_FIXES = {"new york": "NY"}
 @click.option("--replace", is_flag=True, help="Delete existing members first.")
 def import_csv(csv_path, replace):
     """Load the Access Contacts table exported as CSV (header row required)."""
-    canonical = {s.lower(): s for s in DEFAULT_STATUSES}
+    canonical = {s.lower(): s for s in cfg().groups}
     conn = _connect()
     try:
         if conn.execute("SELECT 1 FROM members LIMIT 1").fetchone():

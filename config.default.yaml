@@ -1,0 +1,36 @@
+# Cicero VFD Membership Roster - settings
+#
+# This file lives in the data folder (next to cfd.db) and is read automatically. Edits apply within a
+# moment, no restart needed. A bad value is ignored (the built-in default is used) and a warning is
+# written to the container log. Delete this file to get a fresh copy with the defaults.
+
+# Shown in the page banner, browser tab titles and the sign-in page.
+department_name: "Cicero Fire Department"
+
+# Used on the printed/PDF roster and in contact cards (.vcf). Optional: defaults to department_name.
+formal_name: "Cicero Volunteer Fire Department"
+
+# Logo image (png, jpg, gif, svg or webp, under 2 MB). A plain file name is looked up in this same
+# folder (the data folder). If it is missing, the built-in logo is used.
+logo_file: logo.png
+
+# Main color of the app: banner, buttons and links. Hex color, e.g. "#1d9a45".
+# White text is drawn on it, so pick a medium or dark color. Dark mode adjusts it automatically.
+theme_color: "#1d9a45"
+
+# Color of the banner strip at the top of the printed roster (the PDF).
+roster_banner_color: "#cbd4e4"
+
+# Membership groups, in the order shown. The number prefix controls sorting and is hidden on the
+# printed roster ("01-Active Members" prints as "Active Members"). The first one is the default for
+# new members. Members whose group is not listed here still appear; it just isn't offered for new entries.
+groups:
+  - "01-Active Members"
+  - "02-Junior Members"
+  - "03-In-Active Life Members"
+  - "05-Fire Chiefs"
+  - "06-Commissioners"
+  - "07-Auxiliary Members"
+  - "08-Honorary Members"
+  - "09-Line of Duty Family"
+  - "10-Hall Coordinator"
