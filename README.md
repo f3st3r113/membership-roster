@@ -51,6 +51,12 @@ A stack pasted into Dockhand has no project folder, so `build: .` fails with
 
 To update after changing code: rebuild with the same `docker build` command, then redeploy the stack.
 
+### Dockhand with a Git repository (no manual build)
+
+Create the stack from the Git repository (SSH deploy key, read-only) and use `docker-compose.git.yml`
+as the compose file. It builds the image from the checkout (`pull_policy: build`) and keeps the database
+at `/volume1/docker/cfd-roster/data`, outside the checkout. To update: pull/sync in Dockhand and redeploy.
+
 ## Mobile Info (mi.json)
 
 `mi.json` is built straight from the database: every active member, sorted by name, with the fields
