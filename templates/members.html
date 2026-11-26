@@ -1,5 +1,6 @@
 {% extends "base.html" %}
 {% block title %}Members{% endblock %}
+{% block main_class %}wide{% endblock %}
 {% block content %}
 <form method="get" class="filters card">
   <input type="search" name="q" value="{{ q }}" placeholder="Search name, ID, phone, e-mail, city…" autofocus>

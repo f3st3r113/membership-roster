@@ -107,9 +107,9 @@ label > input, label > select, label > textarea { margin-top: 3px; color: var(--
 .filters { display: grid; grid-template-columns: 1fr auto auto auto auto auto; gap: 8px; align-items: center; }
 .count { color: var(--muted); margin: 12px 2px 6px; font-size: 14px; }
 .table-wrap { overflow-x: auto; background: var(--card); border: 1px solid var(--line); border-radius: 8px; }
-table.grid { width: 100%; border-collapse: collapse; font-size: 14px; }
+table.grid { min-width: 100%; width: max-content; border-collapse: collapse; font-size: 14px; }  /* columns fit their content */
 table.grid th { text-align: left; background: var(--thead); padding: 8px 10px; border-bottom: 1px solid var(--line); white-space: nowrap; }
-table.grid td { padding: 7px 10px; border-bottom: 1px solid var(--rowline); vertical-align: top; }
+table.grid td { white-space: nowrap; padding: 7px 10px; border-bottom: 1px solid var(--rowline); vertical-align: top; }
 table.grid tbody tr:hover { background: var(--rowhover); }
 .nowrap { white-space: nowrap; }
 .empty { text-align: center; color: var(--muted); padding: 24px !important; }
@@ -162,3 +162,6 @@ form.stack { display: grid; gap: 8px; margin-top: 8px; padding: 12px; min-width:
 .theme-toggle:focus-visible { outline: 3px solid #fff; outline-offset: 1px; }
 .banner-right { margin-left: auto; display: flex; align-items: center; gap: 10px; }
 .banner-right .logout { margin-left: 0; }
+
+/* pages with wide tables (Members list) use the full window */
+main.wide { max-width: none; }

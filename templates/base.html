@@ -48,7 +48,7 @@
   </nav>
   {% endif %}
 
-  <main>
+  <main class="{% block main_class %}{% endblock %}">
     {% with msgs = get_flashed_messages(with_categories=true) %}
       {% for cat, msg in msgs %}<div class="flash flash-{{ cat }}">{{ msg }}</div>{% endfor %}
     {% endwith %}
