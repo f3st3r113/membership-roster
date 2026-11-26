@@ -49,7 +49,8 @@ A stack pasted into Dockhand has no project folder, so `build: .` fails with
 5. **Deploy**, then open `http://<nas-address>:8080` and sign in as `admin`.
 6. Make sure `/volume1/docker/cfd-roster/data` is writable by the PUID/PGID user.
 
-To update after changing code: rebuild with the same `docker build` command, then redeploy the stack.
+To update after changing code: run `sh update.sh` in the code folder (it pulls from GitHub and rebuilds the image),
+then redeploy the stack. Or rebuild by hand with the same `docker build` command.
 
 ### Dockhand with a Git repository (no manual build)
 
