@@ -44,7 +44,8 @@ to also get a pinned `:1.0.0` image. With that, a stack is all you need, like mo
      `echo <TOKEN> | sudo docker login ghcr.io -u f3st3r113 --password-stdin`
 2. **Prepare the data folder** (step 3 of the install above).
 3. **Dockhand:** create a normal stack and paste `docker-compose.ghcr.yml`. Add `PUID`, `PGID`,
-   `CFD_ADMIN_PASSWORD` and `CFD_COOKIE_SECURE`. Deploy.
+   `CFD_ADMIN_PASSWORD` and `CFD_COOKIE_SECURE`, plus `DATA_DIR` if your data folder isn't
+   `/volume1/docker/cfd-roster/data`. Deploy.
 4. **Update:** redeploy the stack. It always pulls the newest `:latest` (or change the tag to pin a version).
 
 ## Installing on a Synology NAS with Dockhand (build it yourself)

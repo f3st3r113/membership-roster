@@ -5,6 +5,7 @@
 #     PUID / PGID          numeric owner of the data folder (run `id <user>` over SSH)
 #     CFD_ADMIN_PASSWORD   password for the first "admin" login (only read on first start)
 #     CFD_COOKIE_SECURE    1 once served over HTTPS (default 0)
+#     DATA_DIR             folder on the host for the database and config.yaml (default: the Synology path below)
 #
 # To update: redeploy the stack. pull_policy "always" fetches the newest image each time.
 # To pin a version instead of following main, use e.g. :1.2.3 in place of :latest.
@@ -18,7 +19,7 @@ services:
       - "8080:8000"               # change the left number if 8080 is taken
     user: "${PUID:-1000}:${PGID:-1000}"
     volumes:
-      - /volume1/docker/cfd-roster/data:/data    # database + session key
+      - ${DATA_DIR:-/volume1/docker/cfd-roster/data}:/data    # database, config.yaml, logo; must be writable by PUID:PGID
     environment:
       CFD_ADMIN_USER: "admin"
       CFD_ADMIN_PASSWORD: "${CFD_ADMIN_PASSWORD:-}"
