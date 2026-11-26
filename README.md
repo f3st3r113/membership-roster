@@ -25,6 +25,7 @@ All data lives in a single `data/` folder, and member data is never part of this
 | `Dockerfile`, `requirements.txt` | How the image is built |
 | `docker-compose.yml` | For `docker compose up --build` from this folder |
 | `config.default.yaml`, `config.py` | Template and loader for the settings file (see [Settings](#settings-configyaml)) |
+| `VERSION` | Current version (shown at the bottom of every page) |
 | `docker-compose.ghcr.yml` | Stack that pulls the published image from ghcr.io (easiest; no clone or build) |
 | `docker-compose.dockhand.yml` | Image-only stack for an image you built yourself on the NAS |
 | `.github/workflows/docker.yml` | GitHub Action that builds and publishes the image |
@@ -33,8 +34,8 @@ All data lives in a single `data/` folder, and member data is never part of this
 ## Installing from the published image (no clone, no build)
 
 Every change to `main` is built by GitHub Actions and published as
-`ghcr.io/f3st3r113/membership-roster:latest` (amd64 and arm64). Tag a release (`git tag v1.0.0 && git push --tags`)
-to also get a pinned `:1.0.0` image. With that, a stack is all you need, like most self-hosted apps.
+`ghcr.io/f3st3r113/membership-roster:latest` (amd64 and arm64). Tag a release (see *Versions and releases*)
+to also get a pinned version image such as `:26.11.26.1`. With that, a stack is all you need, like most self-hosted apps.
 
 1. **One-time, on GitHub:** open the repo's **Actions** tab and confirm *Publish Docker image* ran green.
    Then open your profile's **Packages → membership-roster → Package settings**:
@@ -47,6 +48,23 @@ to also get a pinned `:1.0.0` image. With that, a stack is all you need, like mo
    `CFD_ADMIN_PASSWORD` and `CFD_COOKIE_SECURE`, plus `DATA_DIR` if your data folder isn't
    `/volume1/docker/cfd-roster/data`. Deploy.
 4. **Update:** redeploy the stack. It always pulls the newest `:latest` (or change the tag to pin a version).
+
+## Versions and releases
+
+Versions are dated: `YY.MM.DD.N` (for example `26.11.26.1` is the first release of 26 Nov 2026). The current version is in the
+`VERSION` file and is shown at the bottom of every page.
+
+To publish a release:
+
+```sh
+echo 26.12.03.1 > VERSION
+git add VERSION && git commit -m "Release 26.12.03.1"
+git tag v26.12.03.1 && git push && git push --tags
+```
+
+The tag must match `VERSION` (the build fails otherwise). GitHub Actions then builds the image, publishes it as
+`ghcr.io/f3st3r113/membership-roster:26.12.03.1` (and `:latest`) and creates a GitHub Release with generated notes.
+In a stack, use the version tag instead of `:latest` to pin a release.
 
 ## Installing on a Synology NAS with Dockhand (build it yourself)
 

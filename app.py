@@ -23,6 +23,10 @@ from werkzeug.security import check_password_hash, generate_password_hash
 
 BASE_DIR = Path(__file__).resolve().parent
 DB_PATH = Path(os.environ.get("CFD_DB", BASE_DIR / "data" / "cfd.db"))
+try:
+    APP_VERSION = (BASE_DIR / "VERSION").read_text().strip() or "dev"
+except OSError:
+    APP_VERSION = "dev"
 CONFIG_PATH = Path(os.environ.get("CFD_CONFIG", DB_PATH.parent / "config.yaml"))
 
 PAGE_SIZES = (10, 25, 50, 100)  # choices offered on the Members page
@@ -213,7 +217,8 @@ def inject_helpers():
             session["_csrf"] = secrets.token_hex(16)
         return session["_csrf"]
 
-    return {"csrf_token": csrf_token, "current_user": g.get("user"), "cfg": cfg()}
+    return {"csrf_token": csrf_token, "current_user": g.get("user"), "cfg": cfg(),
+            "app_version": APP_VERSION}
 
 
 @app.route("/branding/logo")
