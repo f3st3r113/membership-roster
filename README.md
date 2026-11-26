@@ -34,8 +34,7 @@ All data lives in a single `data/` folder, and member data is never part of this
 ## Installing from the published image (no clone, no build)
 
 Every change to `main` is built by GitHub Actions and published as
-`ghcr.io/f3st3r113/membership-roster:latest` (amd64 and arm64). Tag a release (see *Versions and releases*)
-to also get a pinned version image such as `:26.11.26.1`. With that, a stack is all you need, like most self-hosted apps.
+`ghcr.io/f3st3r113/membership-roster:latest` (amd64 and arm64). Each version also gets a pinned image such as `:26.11.26.1` (see *Versions and releases*). With that, a stack is all you need, like most self-hosted apps.
 
 1. **One-time, on GitHub:** open the repo's **Actions** tab and confirm *Publish Docker image* ran green.
    Then open your profile's **Packages → membership-roster → Package settings**:
@@ -54,17 +53,17 @@ to also get a pinned version image such as `:26.11.26.1`. With that, a stack is 
 Versions are dated: `YY.MM.DD.N` (for example `26.11.26.1` is the first release of 26 Nov 2026). The current version is in the
 `VERSION` file and is shown at the bottom of every page.
 
-To publish a release:
+To publish a release, change `VERSION`, commit and push:
 
 ```sh
 echo 26.12.03.1 > VERSION
-git add VERSION && git commit -m "Release 26.12.03.1"
-git tag v26.12.03.1 && git push && git push --tags
+git add VERSION && git commit -m "Release 26.12.03.1" && git push
 ```
 
-The tag must match `VERSION` (the build fails otherwise). GitHub Actions then builds the image, publishes it as
-`ghcr.io/f3st3r113/membership-roster:26.12.03.1` (and `:latest`) and creates a GitHub Release with generated notes.
-In a stack, use the version tag instead of `:latest` to pin a release.
+GitHub Actions then builds the image, publishes it as `ghcr.io/f3st3r113/membership-roster:26.12.03.1` (and `:latest`),
+and creates a GitHub Release `v26.12.03.1` with generated notes if that version has no release yet.
+In a stack, use the version tag instead of `:latest` to pin a release. (Pushes that don't change `VERSION`
+still refresh `:latest` and the current version's image.)
 
 ## Installing on a Synology NAS with Dockhand (build it yourself)
 
