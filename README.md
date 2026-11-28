@@ -145,24 +145,26 @@ not touched. Refresh the browser once so it picks up new stylesheets.
 * **Synology Container Manager project:** copy this folder to the NAS, create a project pointing at it, use
   `docker-compose.yml`, and set `CFD_ADMIN_PASSWORD`, `PUID` and `PGID`.
 
-## New Member Interview
+## New member folder and interview form
 
 The member form has two extra fields, **Response Type** (Normal, Duty Hours) and **Membership Class**
-(Interior, Exterior, Junior, EMS, Driver, Fire Police, Associate), and a **New Member Interview** button next
-to *Save and New*. The button saves the member (like *Save*), then creates this folder and puts a filled-in
-interview form (PDF) in it:
+(Interior, Exterior, Junior, EMS, Driver, Fire Police, Associate), and a **Create new member folder** check box next to
+*Active*. Tick it and click **Save** or **Save and New**: after saving, the app creates this folder for **next month**
+and puts a filled-in New Member Interview form (PDF) in it:
 
 ```
 <NEW_MEMBER_DIR>/<year>/<Month>/<ID #>_<Last>_<First>/New_Member_Interview_<Last>_<First>_<date>.pdf
-e.g.  /nmd/2026/November/2103_Johnson_Roberto/New_Member_Interview_Johnson_Roberto_2026-11-28.pdf
+e.g. run on 28 Nov 2026:  /nmd/2026/December/2103_Johnson_Roberto/New_Member_Interview_Johnson_Roberto_2026-11-28.pdf
 ```
 
-If there is no ID # the folder starts with an underscore (`_Johnson_Roberto`). If the folder already exists the new
-form is simply added to it (a second form the same day gets `_2`); nothing is ever overwritten.
+If there is no ID # the folder starts with an underscore (`_Johnson_Roberto`). If the folder already exists the new form is
+simply added to it (a second form the same day gets `_2`); nothing is overwritten. The box is unticked each time the page
+loads, so a folder is only made when you ask for it. If the Membership Class (or Response Type) isn't filled in yet, the
+folder is still created and a notice says the form needs them; fill them in and save again with the box ticked to add the form.
 
 **Setup:** mount the host folder at `/nmd` and set `NEW_MEMBER_DIR` to `/nmd` in the stack (see the commented
-lines in `docker-compose.ghcr.yml`). The folder must exist and be writable by `PUID:PGID`. Without
-`NEW_MEMBER_DIR` the button is hidden. Dates use the `timezone` setting in `config.yaml`.
+lines in `docker-compose.ghcr.yml`). The folder must exist and be writable by `PUID:PGID`. Without `NEW_MEMBER_DIR`,
+ticking the box shows a notice instead. Dates use the `timezone` setting in `config.yaml`.
 
 What the form fills in:
 

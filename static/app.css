@@ -182,3 +182,5 @@ main.wide { max-width: none; }
 
 /* footer */
 .site-footer { padding: 0 24px 24px; text-align: center; color: var(--muted); font-size: 12px; }
+
+.checks { display: flex; flex-wrap: wrap; gap: 8px 28px; }

@@ -15,8 +15,6 @@
     {% if can_edit %}
       <button class="btn btn-primary" name="action" value="save">Save</button>
       <button class="btn" name="action" value="save_new">Save and New</button>
-      {% if interview_enabled %}<button class="btn" name="action" value="interview"
-        title="Saves this member, then creates the interview folder and a filled-in New Member Interview PDF">New Member Interview</button>{% endif %}
     {% endif %}
     {% if m and v.email %}<a class="btn" href="mailto:{{ v.email }}">E-mail</a>{% endif %}
     {% if m %}<a class="btn" href="{{ url_for('member_vcard', member_id=m['id']) }}">Save as Contact (.vcf)</a>{% endif %}
@@ -40,7 +38,10 @@
         <label>State <input name="state" value="{{ v.state }}" {{ dis }}></label>
         <label>Zip/Postal Code <input name="zip" value="{{ v.zip }}" {{ dis }}></label>
       </div>
-      <label class="check"><input type="checkbox" name="active" value="1" {{ 'checked' if v.active }} {{ dis }}> Active</label>
+      <div class="checks">
+        <label class="check"><input type="checkbox" name="active" value="1" {{ 'checked' if v.active }} {{ dis }}> Active</label>
+        {% if can_edit %}<label class="check" title="When you click Save or Save and New, also create next month's new member folder with a filled-in interview form"><input type="checkbox" name="create_folder" value="1" {{ 'checked' if create_folder }}> Create new member folder</label>{% endif %}
+      </div>
     </div>
 
     <div class="col">

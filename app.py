@@ -228,7 +228,7 @@ def inject_helpers():
         return session["_csrf"]
 
     return {"csrf_token": csrf_token, "current_user": g.get("user"), "cfg": cfg(),
-            "app_version": APP_VERSION, "interview_enabled": bool(os.environ.get("NEW_MEMBER_DIR", "").strip())}
+            "app_version": APP_VERSION}
 
 
 @app.route("/branding/logo")
@@ -579,24 +579,30 @@ def read_form():
     return values, errors
 
 
-def create_interview(m):
-    """Make <NEW_MEMBER_DIR>/<year>/<Month>/<ID>_<Last>_<First>/ (if needed) and put a filled-in
-    New Member Interview PDF in it. Returns a short description of where it went."""
+def create_member_folder(m):
+    """Make <NEW_MEMBER_DIR>/<year>/<Month>/<ID>_<Last>_<First>/ for NEXT month (if it isn't there yet) and
+    put a filled-in New Member Interview PDF in it. Returns (folder, pdf name or None, problem or None):
+    the folder is made even when the form can't be (for example no Membership Class yet)."""
     base = os.environ.get("NEW_MEMBER_DIR", "").strip()
     if not base:
-        raise ivw.InterviewError("New member folder is not set up (NEW_MEMBER_DIR).")
+        raise ivw.InterviewError("The new member folder is not set up (NEW_MEMBER_DIR).")
     root = Path(base)
     if not root.is_dir():
         raise ivw.InterviewError("The new member folder is not available. Check that it is mounted at NEW_MEMBER_DIR.")
     c = cfg()
     now = settings.now_local(c.timezone)
-    req = ivw.requirements(m["membership_class"], m["response_type"])
-    dates = ivw.next_month_dates(now.date())
-    folder = root / str(now.year) / ivw.MONTHS[now.month - 1] / ivw.folder_name(
+    year, month = (now.year + 1, 1) if now.month == 12 else (now.year, now.month + 1)
+    folder = root / str(year) / ivw.MONTHS[month - 1] / ivw.folder_name(
         m["member_id"], m["last_name"], m["first_name"])
     if root.resolve() not in folder.resolve().parents:
         raise ivw.InterviewError("The member's name or ID # gives an invalid folder name.")
     folder.mkdir(parents=True, exist_ok=True)
+    rel = str(folder.relative_to(root))
+    try:
+        req = ivw.requirements(m["membership_class"], m["response_type"])
+    except ivw.InterviewError as exc:
+        return rel, None, str(exc)
+    dates = ivw.next_month_dates(now.date())
     fields = {
         "date": ivw.fmt_date(now.date()),
         "name": " ".join(p for p in (m["first_name"], m["last_name"]) if p),
@@ -623,18 +629,22 @@ def create_interview(m):
     tmp = target.with_name("." + target.name + ".tmp")
     tmp.write_bytes(pdf)
     os.replace(tmp, target)
-    return f"{target.parent.relative_to(root)}/{target.name}"
+    return rel, target.name, None
 
 
-def interview_after_save(values):
+def folder_after_save(values):
+    """Runs after a successful Save / Save and New when 'Create new member folder' is ticked."""
     try:
-        where = create_interview(values)
-        flash(f"New member interview form saved: {where}", "ok")
+        rel, pdf, problem = create_member_folder(values)
+        if pdf:
+            flash(f"New member folder ready: {rel}/{pdf}", "ok")
+        else:
+            flash(f"New member folder created: {rel}. No interview form yet: {problem}", "error")
     except ivw.InterviewError as exc:
-        flash(f"Member saved, but no interview form was made: {exc}", "error")
+        flash(f"Member saved, but no folder was made: {exc}", "error")
     except OSError as exc:
-        app.logger.warning("interview form failed: %s", exc)
-        flash(f"Member saved, but the interview form could not be written ({exc.__class__.__name__}: {exc.strerror or exc}).", "error")
+        app.logger.warning("new member folder failed: %s", exc)
+        flash(f"Member saved, but the folder could not be created ({exc.__class__.__name__}: {exc.strerror or exc}).", "error")
 
 
 @app.route("/members/new", methods=["GET", "POST"])
@@ -651,14 +661,15 @@ def member_new():
             )
             get_db().commit()
             flash("Member added.", "ok")
-            if request.form.get("action") == "interview":
-                interview_after_save(values)
+            if request.form.get("create_folder") == "1":
+                folder_after_save(values)
             if request.form.get("action") == "save_new":
                 return redirect(url_for("member_new"))
             return redirect(url_for("member_edit", member_id=cur.lastrowid))
         for e in errors:
             flash(e, "error")
-    return render_template("member_form.html", m=None, v=values, statuses=all_statuses())
+    return render_template("member_form.html", m=None, v=values, statuses=all_statuses(),
+                           create_folder=request.form.get("create_folder") == "1")
 
 
 @app.route("/members/<int:member_id>", methods=["GET", "POST"])
@@ -680,14 +691,15 @@ def member_edit(member_id):
             )
             get_db().commit()
             flash("Saved.", "ok")
-            if request.form.get("action") == "interview":
-                interview_after_save(values)
+            if request.form.get("create_folder") == "1":
+                folder_after_save(values)
             if request.form.get("action") == "save_new":
                 return redirect(url_for("member_new"))
             return redirect(url_for("member_edit", member_id=member_id))
         for e in errors:
             flash(e, "error")
-    return render_template("member_form.html", m=row, v=values, statuses=all_statuses())
+    return render_template("member_form.html", m=row, v=values, statuses=all_statuses(),
+                           create_folder=request.form.get("create_folder") == "1")
 
 
 @app.route("/members/<int:member_id>/delete", methods=["POST"])
