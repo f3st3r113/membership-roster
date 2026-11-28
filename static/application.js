@@ -53,12 +53,15 @@
         el.dispatchEvent(new Event("input", {bubbles: true}));
         filled.push(LABELS[k] || k);
       });
-      var text = "Filled from " + d.file + ": " + (filled.join(", ") || "nothing new") + ". Review, then Save.";
-      if (kept.length) text += " Already filled, left alone: " + kept.join(", ") + ".";
-      if (d.notes.length) text += " " + d.notes.join(" ");
       var folder = document.querySelector('.member-form [name="create_folder"]');
-      if (folder) { folder.checked = true; text += " Create new member folder is ticked."; }
-      say(text);
+      if (folder) folder.checked = true;
+      if (d.notes.length) {  // something needs a look: show the details
+        var text = "Filled from " + d.file + ": " + (filled.join(", ") || "nothing new") + ". " + d.notes.join(" ");
+        if (kept.length) text += " Already filled, left alone: " + kept.join(", ") + ".";
+        say(text, true);
+      } else {
+        say("Complete");
+      }
       list.innerHTML = "";
     });
   }
