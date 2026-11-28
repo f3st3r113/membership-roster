@@ -153,8 +153,8 @@ The member form has two extra fields, **Response Type** (Normal, Duty Hours) and
 and puts a filled-in New Member Interview form (PDF) in it:
 
 ```
-<NEW_MEMBER_DIR>/<year>/<Month>/<ID #>_<Last>_<First>/New_Member_Interview_<Last>_<First>_<date>.pdf
-e.g. run on 28 Nov 2026:  /nmd/2026/December/2103_Johnson_Roberto/New_Member_Interview_Johnson_Roberto_2026-11-28.pdf
+<NEW_MEMBER_DIR>/<year>/<MM-Month>/<ID #>_<Last>_<First>/New_Member_Interview_<Last>_<First>_<date>.pdf
+e.g. run on 28 Nov 2026:  /nmd/2026/12-December/2103_Johnson_Roberto/New_Member_Interview_Johnson_Roberto_2026-11-28.pdf
 ```
 
 If there is no ID # the folder starts with an underscore (`_Johnson_Roberto`). If the folder already exists the new form is

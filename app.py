@@ -580,7 +580,7 @@ def read_form():
 
 
 def create_member_folder(m):
-    """Make <NEW_MEMBER_DIR>/<year>/<Month>/<ID>_<Last>_<First>/ for NEXT month (if it isn't there yet) and
+    """Make <NEW_MEMBER_DIR>/<year>/<MM-Month>/<ID>_<Last>_<First>/ for NEXT month (if it isn't there yet) and
     put a filled-in New Member Interview PDF in it. Returns (folder, pdf name or None, problem or None):
     the folder is made even when the form can't be (for example no Membership Class yet)."""
     base = os.environ.get("NEW_MEMBER_DIR", "").strip()
@@ -592,7 +592,7 @@ def create_member_folder(m):
     c = cfg()
     now = settings.now_local(c.timezone)
     year, month = (now.year + 1, 1) if now.month == 12 else (now.year, now.month + 1)
-    folder = root / str(year) / ivw.MONTHS[month - 1] / ivw.folder_name(
+    folder = root / str(year) / f"{month:02d}-{ivw.MONTHS[month - 1]}" / ivw.folder_name(
         m["member_id"], m["last_name"], m["first_name"])
     if root.resolve() not in folder.resolve().parents:
         raise ivw.InterviewError("The member's name or ID # gives an invalid folder name.")
