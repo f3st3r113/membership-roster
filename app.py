@@ -619,15 +619,15 @@ def _write_local(rel, name, pdf):
 def _write_sharepoint(c, rel, name, pdf):
     where = (c.sharepoint_folder or "").strip("/ ")
     if pdf is None:
-        return sharepoint.make_folders(c, rel)
-    used = sharepoint.upload(c, rel, name, pdf)
-    return "/".join(p for p in (where, rel, used) if p)
+        return sharepoint.make_folders(c, rel), ""
+    used, link = sharepoint.upload(c, rel, name, pdf)
+    return "/".join(p for p in (where, rel, used) if p), link
 
 
 def create_member_folder(m):
     """Make <year>/<MM-Month>/<ID>_<Last>_<First>/ for NEXT month in each storage place (local folder and/or
     SharePoint) and put a filled-in New Member Interview PDF in it. Returns (folder, pdf name or None,
-    problem or None, results): results is a list of (place, ok, text). The folder is made even when the
+    problem or None, results): results is a list of (place, ok, text, link). The folder is made even when the
     form can't be (for example no Membership Class yet)."""
     c = cfg()
     targets = storage_targets(c)
@@ -667,24 +667,45 @@ def create_member_folder(m):
     for place in targets:
         label = "Local folder" if place == "local" else "SharePoint"
         try:
-            where = _write_local(rel, name, pdf) if place == "local" else _write_sharepoint(c, rel, name, pdf)
-            results.append((label, True, where))
+            link = ""
+            if place == "local":
+                where = _write_local(rel, name, pdf)
+            else:
+                where, link = _write_sharepoint(c, rel, name, pdf)
+            results.append((label, True, where, link))
         except (ivw.InterviewError, sharepoint.SharePointError) as exc:
-            results.append((label, False, str(exc)))
+            results.append((label, False, str(exc), ""))
         except OSError as exc:
             app.logger.warning("new member folder (%s) failed: %s", place, exc)
-            results.append((label, False, f"{exc.__class__.__name__}: {exc.strerror or exc}"))
+            results.append((label, False, f"{exc.__class__.__name__}: {exc.strerror or exc}", ""))
     return rel, name if pdf else None, problem, results
 
 
-def folder_after_save(values):
+def add_note_link(member_id, link, pdf_name):
+    """Append '<form name>: <link>' to the member's Notes, unless that link is already there."""
+    db = get_db()
+    row = db.execute("SELECT notes FROM members WHERE id = ?", (member_id,)).fetchone()
+    if row is None or link in (row["notes"] or ""):
+        return
+    line = f"New Member Interview form: {link}"
+    notes = ((row["notes"] or "").rstrip() + "\n" + line).strip()
+    if len(notes) > 5000:
+        flash("The SharePoint link was not added to Notes (Notes would be too long).", "error")
+        return
+    db.execute("UPDATE members SET notes = ? WHERE id = ?", (notes, member_id))
+    db.commit()
+
+
+def folder_after_save(values, member_id):
     """Runs after a successful Save / Save and New when 'Create new member folder' is ticked."""
     try:
         rel, pdf, problem, results = create_member_folder(values)
     except ivw.InterviewError as exc:
         flash(f"Member saved, but no folder was made: {exc}", "error")
         return
-    for label, ok, text in results:
+    for label, ok, text, link in results:
+        if ok and pdf and link:
+            add_note_link(member_id, link, pdf)
         if not ok:
             app.logger.warning("new member folder (%s) failed: %s", label, text)
             flash(f"Member saved, but the {label} copy failed: {text}", "error")
@@ -692,6 +713,13 @@ def folder_after_save(values):
             flash(f"New member folder ready in {label}: {text}", "ok")
         else:
             flash(f"New member folder created in {label}: {text}. No interview form yet: {problem}", "error")
+
+
+@app.template_filter("urls")
+def urls_filter(text):
+    """Web links (https://...) found in a block of text, without duplicates."""
+    found = re.findall(r"https://[^\s<>\"']+", text or "")
+    return list(dict.fromkeys(u.rstrip(".,;)") for u in found))
 
 
 @app.route("/members/new", methods=["GET", "POST"])
@@ -709,7 +737,7 @@ def member_new():
             get_db().commit()
             flash("Member added.", "ok")
             if request.form.get("create_folder") == "1":
-                folder_after_save(values)
+                folder_after_save(values, cur.lastrowid)
             if request.form.get("action") == "save_new":
                 return redirect(url_for("member_new"))
             return redirect(url_for("member_edit", member_id=cur.lastrowid))
@@ -739,7 +767,7 @@ def member_edit(member_id):
             get_db().commit()
             flash("Saved.", "ok")
             if request.form.get("create_folder") == "1":
-                folder_after_save(values)
+                folder_after_save(values, member_id)
             if request.form.get("action") == "save_new":
                 return redirect(url_for("member_new"))
             return redirect(url_for("member_edit", member_id=member_id))

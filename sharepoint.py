@@ -153,7 +153,7 @@ def make_folders(cfg, rel):
 
 def upload(cfg, rel, filename, data):
     """Upload bytes as <sharepoint_folder>/<rel>/<filename>, replacing a file of the same name.
-    Folders are created automatically. Returns the file name."""
+    Folders are created automatically. Returns (file name, link to the file in SharePoint or '')."""
     drive = _drive_id(cfg)
     base = _clean_path(_get(cfg, "sharepoint_folder") or "") + _clean_path(rel)
     status, p = _graph("PUT", f"/drives/{drive}/root:/{_enc(base + [filename])}:/content"
@@ -161,4 +161,4 @@ def upload(cfg, rel, filename, data):
                        raw=data, content_type="application/pdf")
     if status not in (200, 201):
         raise SharePointError(f"SharePoint upload failed ({status}). {_err(p)}")
-    return filename
+    return filename, (p.get("webUrl", "") if isinstance(p, dict) else "")

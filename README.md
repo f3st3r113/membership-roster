@@ -171,6 +171,7 @@ ticking the box shows a notice instead (unless SharePoint is set up, see below).
 `storage` in `config.yaml` chooses where the folders go: `auto` (every place that is set up; the default),
 `local`, `sharepoint`, or `both`. SharePoint files land in
 `<library>/<sharepoint_folder>/<year>/<MM-Month>/<ID>_<Last>_<First>/`. A form with the same name (same member, same day) is replaced; the date is part of the name, so another day keeps the earlier one.
+The link to the PDF in SharePoint is added to the member's **Notes** as a line `New Member Interview form: <link>` (once; saving again doesn't repeat it), and any web links in Notes show as clickable "Open link" lines under the box.
 If one place fails (for example SharePoint is unreachable) the other still gets its copy and a notice names the one that failed.
 
 One-time setup, as a Microsoft 365 / Entra administrator:

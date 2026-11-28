@@ -65,6 +65,8 @@
         </label>
       </div>
       <label>Notes <textarea name="notes" rows="9" {{ dis }}>{{ v.notes }}</textarea></label>
+      {% for u in v.notes|urls %}<div class="note-link"><a href="{{ u }}" target="_blank" rel="noopener noreferrer">Open link{{ ' ' ~ loop.index if loop.length > 1 }}: {{ u|truncate(60) }}</a></div>
+      {% endfor %}
     </div>
   </div>
 </form>
