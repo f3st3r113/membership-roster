@@ -28,3 +28,6 @@ services:
       CFD_ADMIN_PASSWORD: "${CFD_ADMIN_PASSWORD:-}"
       CFD_COOKIE_SECURE: "${CFD_COOKIE_SECURE:-0}"
       # NEW_MEMBER_DIR: "/nmd"      # uncomment together with the /nmd volume above
+      # SP_TENANT_ID: ""             # SharePoint (optional, see README)
+      # SP_CLIENT_ID: ""
+      # SP_CLIENT_SECRET: ""

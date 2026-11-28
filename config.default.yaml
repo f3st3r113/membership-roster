@@ -62,3 +62,16 @@ interviewers:
   - "Carlin"
   - "Germain"
   - "Benjamin"
+
+# Where "Create new member folder" puts the folders and interview PDFs:
+#   auto        every place that is set up: the local folder (NEW_MEMBER_DIR) and/or SharePoint (below)
+#   local       only the local folder
+#   sharepoint  only SharePoint
+#   both        local and SharePoint (a notice appears if either one is missing or fails)
+storage: "auto"
+
+# SharePoint (optional). Also needs SP_TENANT_ID, SP_CLIENT_ID and SP_CLIENT_SECRET in the stack
+# (see the README). Files go to <library>/<sharepoint_folder>/<year>/<MM-Month>/<ID>_<Last>_<First>/.
+sharepoint_site_url: "https://cicerofd.sharepoint.com/sites/MembershipCommittee"
+sharepoint_library: "Documents"          # shows as "Shared Documents" in the web address
+sharepoint_folder: "General/TEST"        # TEST while trying this out; change to the real folder when ready

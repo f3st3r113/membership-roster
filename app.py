@@ -18,6 +18,7 @@ from urllib.parse import urlparse
 import click
 import config as settings
 import interview as ivw
+import sharepoint
 from flask import (Flask, Response, abort, flash, g, redirect, render_template,
                    jsonify, request, session, url_for)
 from werkzeug.security import check_password_hash, generate_password_hash
@@ -579,49 +580,35 @@ def read_form():
     return values, errors
 
 
-def create_member_folder(m):
-    """Make <NEW_MEMBER_DIR>/<year>/<MM-Month>/<ID>_<Last>_<First>/ for NEXT month (if it isn't there yet) and
-    put a filled-in New Member Interview PDF in it. Returns (folder, pdf name or None, problem or None):
-    the folder is made even when the form can't be (for example no Membership Class yet)."""
-    base = os.environ.get("NEW_MEMBER_DIR", "").strip()
-    if not base:
-        raise ivw.InterviewError("The new member folder is not set up (NEW_MEMBER_DIR).")
-    root = Path(base)
+def storage_targets(c):
+    """Which places get the folder: a list of 'local' / 'sharepoint', per the storage setting."""
+    local_ok = bool(os.environ.get("NEW_MEMBER_DIR", "").strip())
+    sp_ok = sharepoint.is_configured(c)
+    mode = c.storage
+    if mode == "auto":
+        targets = (["local"] if local_ok else []) + (["sharepoint"] if sp_ok else [])
+        if not targets:
+            raise ivw.InterviewError("The new member folder is not set up (NEW_MEMBER_DIR, or SharePoint).")
+        return targets
+    wanted = ["local", "sharepoint"] if mode == "both" else [mode]
+    if "local" in wanted and not local_ok:
+        raise ivw.InterviewError("storage includes the local folder, but NEW_MEMBER_DIR is not set.")
+    if "sharepoint" in wanted and not sp_ok:
+        raise ivw.InterviewError("storage includes SharePoint, but sharepoint_site_url or SP_TENANT_ID / "
+                                 "SP_CLIENT_ID / SP_CLIENT_SECRET is missing.")
+    return wanted
+
+
+def _write_local(rel, name, pdf):
+    root = Path(os.environ["NEW_MEMBER_DIR"].strip())
     if not root.is_dir():
-        raise ivw.InterviewError("The new member folder is not available. Check that it is mounted at NEW_MEMBER_DIR.")
-    c = cfg()
-    now = settings.now_local(c.timezone)
-    year, month = (now.year + 1, 1) if now.month == 12 else (now.year, now.month + 1)
-    folder = root / str(year) / f"{month:02d}-{ivw.MONTHS[month - 1]}" / ivw.folder_name(
-        m["member_id"], m["last_name"], m["first_name"])
+        raise ivw.InterviewError("The local new member folder is not available. Check that it is mounted at NEW_MEMBER_DIR.")
+    folder = root / rel
     if root.resolve() not in folder.resolve().parents:
         raise ivw.InterviewError("The member's name or ID # gives an invalid folder name.")
     folder.mkdir(parents=True, exist_ok=True)
-    rel = str(folder.relative_to(root))
-    try:
-        req = ivw.requirements(m["membership_class"], m["response_type"])
-    except ivw.InterviewError as exc:
-        return rel, None, str(exc)
-    dates = ivw.next_month_dates(now.date())
-    fields = {
-        "date": ivw.fmt_date(now.date()),
-        "name": " ".join(p for p in (m["first_name"], m["last_name"]) if p),
-        "address": ivw.address_text(m),
-        "location": ivw.station_text(m["fire_station"]),
-        "response_type": m["response_type"],
-        "email": m["email"],
-        "membership_class": m["membership_class"],
-        "drills": req["drills"], "meetings": req["meetings"],
-        "call_label": req["call_label"], "call_value": req["call_value"],
-        "membership_date": ivw.fmt_date(dates["membership"]),
-        "commissioners_date": ivw.fmt_date(dates["commissioners"]),
-        "physical_date": ivw.fmt_date(dates["physical"]),
-        "interviewers": c.interviewers,
-    }
-    from weasyprint import HTML  # imported lazily so the rest works without it
-
-    pdf = HTML(string=render_template("interview.html", f=fields), base_url=str(BASE_DIR)).write_pdf()
-    name = ivw.file_name(m["last_name"], m["first_name"], now)
+    if pdf is None:
+        return rel
     target, n = folder / name, 1
     while target.exists():  # never overwrite an earlier form
         n += 1
@@ -629,22 +616,85 @@ def create_member_folder(m):
     tmp = target.with_name("." + target.name + ".tmp")
     tmp.write_bytes(pdf)
     os.replace(tmp, target)
-    return rel, target.name, None
+    return f"{rel}/{target.name}"
+
+
+def _write_sharepoint(c, rel, name, pdf):
+    where = (c.sharepoint_folder or "").strip("/ ")
+    if pdf is None:
+        return sharepoint.make_folders(c, rel)
+    used = sharepoint.upload(c, rel, name, pdf)
+    return "/".join(p for p in (where, rel, used) if p)
+
+
+def create_member_folder(m):
+    """Make <year>/<MM-Month>/<ID>_<Last>_<First>/ for NEXT month in each storage place (local folder and/or
+    SharePoint) and put a filled-in New Member Interview PDF in it. Returns (folder, pdf name or None,
+    problem or None, results): results is a list of (place, ok, text). The folder is made even when the
+    form can't be (for example no Membership Class yet)."""
+    c = cfg()
+    targets = storage_targets(c)
+    now = settings.now_local(c.timezone)
+    year, month = (now.year + 1, 1) if now.month == 12 else (now.year, now.month + 1)
+    rel = f"{year}/{month:02d}-{ivw.MONTHS[month - 1]}/" + ivw.folder_name(
+        m["member_id"], m["last_name"], m["first_name"])
+    if ".." in rel.split("/") or rel.count("/") != 2:
+        raise ivw.InterviewError("The member's name or ID # gives an invalid folder name.")
+    name = pdf = problem = None
+    try:
+        req = ivw.requirements(m["membership_class"], m["response_type"])
+    except ivw.InterviewError as exc:
+        problem, req = str(exc), None
+    if req:
+        dates = ivw.next_month_dates(now.date())
+        fields = {
+            "date": ivw.fmt_date(now.date()),
+            "name": " ".join(p for p in (m["first_name"], m["last_name"]) if p),
+            "address": ivw.address_text(m),
+            "location": ivw.station_text(m["fire_station"]),
+            "response_type": m["response_type"],
+            "email": m["email"],
+            "membership_class": m["membership_class"],
+            "drills": req["drills"], "meetings": req["meetings"],
+            "call_label": req["call_label"], "call_value": req["call_value"],
+            "membership_date": ivw.fmt_date(dates["membership"]),
+            "commissioners_date": ivw.fmt_date(dates["commissioners"]),
+            "physical_date": ivw.fmt_date(dates["physical"]),
+            "interviewers": c.interviewers,
+        }
+        from weasyprint import HTML  # imported lazily so the rest works without it
+
+        pdf = HTML(string=render_template("interview.html", f=fields), base_url=str(BASE_DIR)).write_pdf()
+        name = ivw.file_name(m["last_name"], m["first_name"], now)
+    results = []
+    for place in targets:
+        label = "Local folder" if place == "local" else "SharePoint"
+        try:
+            where = _write_local(rel, name, pdf) if place == "local" else _write_sharepoint(c, rel, name, pdf)
+            results.append((label, True, where))
+        except (ivw.InterviewError, sharepoint.SharePointError) as exc:
+            results.append((label, False, str(exc)))
+        except OSError as exc:
+            app.logger.warning("new member folder (%s) failed: %s", place, exc)
+            results.append((label, False, f"{exc.__class__.__name__}: {exc.strerror or exc}"))
+    return rel, name if pdf else None, problem, results
 
 
 def folder_after_save(values):
     """Runs after a successful Save / Save and New when 'Create new member folder' is ticked."""
     try:
-        rel, pdf, problem = create_member_folder(values)
-        if pdf:
-            flash(f"New member folder ready: {rel}/{pdf}", "ok")
-        else:
-            flash(f"New member folder created: {rel}. No interview form yet: {problem}", "error")
+        rel, pdf, problem, results = create_member_folder(values)
     except ivw.InterviewError as exc:
         flash(f"Member saved, but no folder was made: {exc}", "error")
-    except OSError as exc:
-        app.logger.warning("new member folder failed: %s", exc)
-        flash(f"Member saved, but the folder could not be created ({exc.__class__.__name__}: {exc.strerror or exc}).", "error")
+        return
+    for label, ok, text in results:
+        if not ok:
+            app.logger.warning("new member folder (%s) failed: %s", label, text)
+            flash(f"Member saved, but the {label} copy failed: {text}", "error")
+        elif pdf:
+            flash(f"New member folder ready in {label}: {text}", "ok")
+        else:
+            flash(f"New member folder created in {label}: {text}. No interview form yet: {problem}", "error")
 
 
 @app.route("/members/new", methods=["GET", "POST"])

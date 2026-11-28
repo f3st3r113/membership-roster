@@ -29,6 +29,10 @@ DEFAULTS = {
     "timezone": "UTC",
     "response_types": ["Normal", "Duty Hours"],
     "membership_classes": ["Interior", "Exterior", "Junior", "EMS", "Driver", "Fire Police", "Associate"],
+    "storage": "auto",
+    "sharepoint_site_url": None,
+    "sharepoint_library": "Documents",
+    "sharepoint_folder": None,
     "interviewers": ["Scarano", "Mayers", "Hoffman", "Carlin", "Germain", "Benjamin"],
     "groups": [
         "01-Active Members", "02-Junior Members", "03-In-Active Life Members", "05-Fire Chiefs",
@@ -36,6 +40,8 @@ DEFAULTS = {
         "10-Hall Coordinator",
     ],
 }
+
+STORAGE_MODES = ("auto", "local", "sharepoint", "both")
 
 _cache = {"key": None, "cfg": None}
 
@@ -109,6 +115,19 @@ def _parse(path):
                 cfg[key] = color
             else:
                 problems.append(f"{key}: '{raw[key]}' is not a hex color like #1d9a45")
+    if "storage" in raw:
+        mode = str(raw["storage"]).strip().lower()
+        if mode in STORAGE_MODES:
+            cfg["storage"] = mode
+        else:
+            problems.append(f"storage: '{raw['storage']}' must be one of {', '.join(STORAGE_MODES)}")
+    for key in ("sharepoint_site_url", "sharepoint_library", "sharepoint_folder"):
+        v = _text(raw, key, problems, 300)
+        if v:
+            cfg[key] = v
+    if cfg["sharepoint_site_url"] and not re.match(r"https://[^/]+/.+", cfg["sharepoint_site_url"]):
+        problems.append("sharepoint_site_url: expected something like https://yourtenant.sharepoint.com/sites/SiteName")
+        cfg["sharepoint_site_url"] = None
     for key in ("groups", "response_types", "membership_classes", "interviewers"):
         if key in raw:
             items = _names(raw[key])

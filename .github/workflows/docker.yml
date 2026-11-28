@@ -1,13 +1,14 @@
 # Builds the Docker image and publishes it to GitHub's container registry (ghcr.io) whenever main changes:
 #   ghcr.io/f3st3r113/membership-roster:latest       newest main
 #   ghcr.io/f3st3r113/membership-roster:26.11.26.1   the version in the VERSION file
+#   ghcr.io/f3st3r113/membership-roster:test         newest 'test' branch (no release is created for it)
 # When the VERSION file holds a version that has no GitHub Release yet, a release (and tag) is created for it.
 # To release: change VERSION (YY.MM.DD.N), commit, push.
 name: Publish Docker image
 
 on:
   push:
-    branches: [main]
+    branches: [main, test]
   workflow_dispatch:
 
 permissions:
@@ -37,8 +38,9 @@ jobs:
         with:
           images: ghcr.io/${{ github.repository }}
           tags: |
-            type=raw,value=latest
-            type=raw,value=${{ steps.ver.outputs.version }}
+            type=raw,value=latest,enable=${{ github.ref_name == 'main' }}
+            type=raw,value=${{ steps.ver.outputs.version }},enable=${{ github.ref_name == 'main' }}
+            type=raw,value=test,enable=${{ github.ref_name == 'test' }}
             type=sha,format=short
 
       - uses: docker/build-push-action@v6
@@ -53,6 +55,7 @@ jobs:
 
   release:
     needs: image
+    if: github.ref_name == 'main'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4

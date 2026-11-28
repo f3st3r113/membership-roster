@@ -164,7 +164,34 @@ folder is still created and a notice says the form needs them; fill them in and 
 
 **Setup:** mount the host folder at `/nmd` and set `NEW_MEMBER_DIR` to `/nmd` in the stack (see the commented
 lines in `docker-compose.ghcr.yml`). The folder must exist and be writable by `PUID:PGID`. Without `NEW_MEMBER_DIR`,
-ticking the box shows a notice instead. Dates use the `timezone` setting in `config.yaml`.
+ticking the box shows a notice instead (unless SharePoint is set up, see below). Dates use the `timezone` setting in `config.yaml`.
+
+### Saving to SharePoint instead of (or as well as) the local folder
+
+`storage` in `config.yaml` chooses where the folders go: `auto` (every place that is set up; the default),
+`local`, `sharepoint`, or `both`. SharePoint files land in
+`<library>/<sharepoint_folder>/<year>/<MM-Month>/<ID>_<Last>_<First>/`. Nothing is ever overwritten (a taken name gets `_2`).
+If one place fails (for example SharePoint is unreachable) the other still gets its copy and a notice names the one that failed.
+
+One-time setup, as a Microsoft 365 / Entra administrator:
+
+1. **Register the app.** Entra admin center > App registrations > New registration (any name, e.g. *Roster Folders*,
+   single tenant). Copy the **Directory (tenant) ID** and **Application (client) ID**.
+2. **Create a secret.** Certificates & secrets > New client secret. Copy the **Value** now (it is shown once) and note the expiry date.
+3. **Give it permission.** API permissions > Add > Microsoft Graph > **Application permissions** > `Sites.Selected` >
+   Grant admin consent. (`Sites.Selected` means the app can reach *only* the sites you name; it can't see the rest of SharePoint.)
+4. **Allow it on the one site.** In [Graph Explorer](https://developer.microsoft.com/graph/graph-explorer), signed in as an admin
+   (consent to `Sites.FullControl.All` for Graph Explorer if asked):
+   - `GET https://graph.microsoft.com/v1.0/sites/cicerofd.sharepoint.com:/sites/MembershipCommittee` and copy the `id`.
+   - `POST https://graph.microsoft.com/v1.0/sites/<that id>/permissions` with body
+     `{"roles": ["write"], "grantedToIdentities": [{"application": {"id": "<client id>", "displayName": "Roster Folders"}}]}`
+5. **Add three settings to the stack** (Dockhand environment): `SP_TENANT_ID`, `SP_CLIENT_ID`, `SP_CLIENT_SECRET`, and pass them to the
+   container (see the commented `SP_...` lines in the compose files).
+6. **Check `config.yaml`:** `sharepoint_site_url`, `sharepoint_library` (the library's real name, usually `Documents`, which is
+   the one shown as *Shared Documents* in web addresses) and `sharepoint_folder`. Keep `General/TEST` until you are happy, then change it.
+
+The container needs outbound HTTPS to `login.microsoftonline.com` and `graph.microsoft.com`. Remember to replace the client
+secret before it expires, or SharePoint saves will start failing with a "sign-in failed" notice.
 
 What the form fills in:
 
