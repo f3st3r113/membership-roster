@@ -3,6 +3,16 @@
 {% block content %}
 {% set can_edit = current_user['can_edit'] %}
 {% set dis = '' if can_edit else 'disabled' %}
+{% if app_search and can_edit %}
+<div class="card app-search" data-search="{{ url_for('application_search') }}" data-fields="{{ url_for('application_fields', item_id='ITEM') }}">
+  <strong>Find application</strong>
+  <label>Last name <input id="app-last" autocomplete="off"></label>
+  <label>First name <input id="app-first" autocomplete="off"></label>
+  <button type="button" class="btn" id="app-go">Search</button>
+  <div id="app-msg" class="app-msg" aria-live="polite"></div>
+  <ul id="app-results" class="app-results"></ul>
+</div>
+{% endif %}
 <form method="post" class="member-form">
   <input type="hidden" name="_csrf" value="{{ csrf_token() }}">
 
@@ -78,4 +88,5 @@
   <button class="btn btn-danger">Delete Member…</button>
 </form>
 {% endif %}
+{% if app_search and can_edit %}<script src="{{ url_for('static', filename='application.js') }}"></script>{% endif %}
 {% endblock %}

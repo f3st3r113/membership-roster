@@ -17,6 +17,7 @@ from urllib.parse import urlparse
 
 import click
 import config as settings
+import application as appform
 import interview as ivw
 import sharepoint
 from flask import (Flask, Response, abort, flash, g, redirect, render_template,
@@ -736,6 +737,41 @@ def folder_after_save(values, member_id):
             flash(f"New member folder created in {label}: {text}. No interview form yet: {problem}", "error")
 
 
+@app.route("/applications/search")
+@edit_required
+def application_search():
+    c = cfg()
+    if not (c.sharepoint_applications_folder and sharepoint.is_configured(c)):
+        return {"error": "Application search needs SharePoint and sharepoint_applications_folder in config.yaml."}, 400
+    last, first = request.args.get("last", "").strip(), request.args.get("first", "").strip()
+    if not last:
+        return {"error": "Type a last name."}, 400
+    try:
+        return {"files": sharepoint.find_applications(c, last, first)}
+    except sharepoint.SharePointError as exc:
+        return {"error": str(exc)}, 502
+
+
+@app.route("/applications/<item_id>/fields")
+@edit_required
+def application_fields(item_id):
+    c = cfg()
+    if not (c.sharepoint_applications_folder and sharepoint.is_configured(c)) or not re.fullmatch(r"[A-Za-z0-9!_-]{1,200}", item_id):
+        return {"error": "Application search is not set up."}, 400
+    try:
+        name, data = sharepoint.get_application(c, item_id)
+        fields, notes = appform.parse(data, request.args.get("last", "").strip(), request.args.get("first", "").strip(),
+                                      c.membership_classes, c.response_types)
+    except sharepoint.SharePointError as exc:
+        return {"error": str(exc)}, 502
+    except Exception as exc:  # unreadable PDF
+        app.logger.warning("could not read application %s: %s", item_id, exc)
+        return {"error": "That file could not be read as an application form."}, 422
+    if "mobile_phone" in fields:
+        fields["mobile_phone"] = format_phone(fields["mobile_phone"])
+    return {"file": name, "fields": fields, "notes": notes}
+
+
 @app.template_filter("urls")
 def urls_filter(text):
     """Web links (https://...) found in a block of text, without duplicates."""
@@ -765,7 +801,8 @@ def member_new():
         for e in errors:
             flash(e, "error")
     return render_template("member_form.html", m=None, v=values, statuses=all_statuses(),
-                           create_folder=request.form.get("create_folder") == "1")
+                           create_folder=request.form.get("create_folder") == "1",
+                           app_search=bool(cfg().sharepoint_applications_folder and sharepoint.is_configured(cfg())))
 
 
 @app.route("/members/<int:member_id>", methods=["GET", "POST"])

@@ -3,3 +3,4 @@ gunicorn>=22
 weasyprint>=62
 PyYAML>=6
 tzdata
+pypdf>=4

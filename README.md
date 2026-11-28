@@ -172,6 +172,14 @@ ticking the box shows a notice instead (unless SharePoint is set up, see below).
 `local`, `sharepoint`, or `both`. SharePoint files land in
 `<library>/<sharepoint_folder>/<year>/<MM-Month>/<ID>_<Last>_<First>/`. A form with the same name (same member, same day) is replaced; the date is part of the name, so another day keeps the earlier one.
 The link to the PDF in SharePoint is added to the member's **Notes** as a line `New Member Interview form: <link>` (once; saving again doesn't repeat it), and any web links in Notes show as clickable "Open link" lines under the box.
+**Find application (Add Member page).** With SharePoint and `sharepoint_applications_folder` set, the Add Member page has a
+**Find application** box. Type Last name (and First name if you like), click **Search**, then **Use** next to the file you want.
+The app reads the application PDF and fills in the form: First/Last Name, Street, City, State (as the two-letter code), Zip,
+Mobile Phone, E-mail, Membership Class (Interior/Exterior/Junior/Driver/EMS/Associate/Fire Police) and Response Type
+(Respond from Home = Normal, Duty Hour(s) = Duty Hours). Only **blank** fields are filled, nothing is saved until you click
+Save, and the file is only read, never changed. The street/city split of the address is a best guess, so check it. The PDF must be
+typed text (not a scan) in the standard application layout.
+
 **Copying application files.** If `sharepoint_applications_folder` is set (the default file uses `General/_NewMemberApplications`),
 saving with the box ticked also **copies** matching files from that folder into the member's new SharePoint folder. A file matches
 when its name starts with `Lastname_Firstname_` (like `Cervantes_Evan_09-05-2026.pdf`; capital letters, spaces and dashes in names

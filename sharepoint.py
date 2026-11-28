@@ -201,22 +201,15 @@ def _wait_for_copy(monitor_url):
     return "pending"
 
 
-def copy_applications(cfg, rel, last, first, days):
-    """Copy files named <Last>_<First>_... that were modified in the last `days` days from the applications
-    folder (sharepoint_applications_folder) into <sharepoint_folder>/<rel>. Returns (copied names, notes).
-    A file with the same name already in the member's folder is replaced. Subfolders are ignored."""
-    from datetime import datetime, timedelta, timezone
+def _application_items(cfg, drive, last, first):
+    """Files in the applications folder named <Last>_<First>_... -> list of (item, modified datetime), newest first."""
+    from datetime import datetime
     src = _clean_path(_get(cfg, "sharepoint_applications_folder") or "")
-    if not src:
-        return [], []
-    drive = _drive_id(cfg)
-    dest = _clean_path(_get(cfg, "sharepoint_folder") or "") + _clean_path(rel)
     want_last, want_first = _norm(last), _norm(first)
-    if not want_last:
-        return [], []
-    cutoff = datetime.now(timezone.utc) - timedelta(days=days)
+    if not src or not want_last:
+        return []
     path = f"/drives/{drive}/root:/{_enc(src)}:/children?$select=id,name,file,lastModifiedDateTime&$top=200"
-    matches = []
+    found = []
     while path:
         status, p = _graph("GET", path)
         if status == 404:
@@ -233,10 +226,58 @@ def copy_applications(cfg, rel, last, first, days):
                 modified = datetime.fromisoformat(it["lastModifiedDateTime"].replace("Z", "+00:00"))
             except (KeyError, ValueError):
                 continue
-            if modified >= cutoff:
-                matches.append(it)
+            found.append((it, modified))
         nxt = (p.get("@odata.nextLink") or "")
         path = nxt.replace(GRAPH_URL, "", 1) if nxt.startswith(GRAPH_URL) else None
+    return sorted(found, key=lambda x: x[1], reverse=True)
+
+
+def find_applications(cfg, last, first, limit=25):
+    """Application files for this name, any age, newest first: [{id, name, modified}]."""
+    if not _get(cfg, "sharepoint_applications_folder"):
+        raise SharePointError("sharepoint_applications_folder is not set in config.yaml.")
+    drive = _drive_id(cfg)
+    return [{"id": it["id"], "name": it["name"], "modified": m.date().isoformat()}
+            for it, m in _application_items(cfg, drive, last, first)[:limit]]
+
+
+MAX_PDF_BYTES = 10 * 1024 * 1024
+
+
+def get_application(cfg, item_id):
+    """Bytes of one file from the applications folder (refuses anything outside that folder)."""
+    drive = _drive_id(cfg)
+    src = "/".join(_clean_path(_get(cfg, "sharepoint_applications_folder") or ""))
+    status, p = _graph("GET", f"/drives/{drive}/items/{urllib.parse.quote(item_id, safe='')}"
+                              "?$select=id,name,size,file,parentReference,@microsoft.graph.downloadUrl")
+    if status != 200 or not p or "file" not in p:
+        raise SharePointError(f"The application file could not be found ({status}). {_err(p)}")
+    parent = urllib.parse.unquote((p.get("parentReference") or {}).get("path", ""))
+    if not src or parent.split("root:", 1)[-1].strip("/").lower() != src.lower():
+        raise SharePointError("That file is not in the applications folder.")
+    if int(p.get("size", 0)) > MAX_PDF_BYTES:
+        raise SharePointError("The application file is too large to read.")
+    url = p.get("@microsoft.graph.downloadUrl")
+    if not url:
+        raise SharePointError("SharePoint did not give a download link for that file.")
+    try:
+        with urllib.request.urlopen(urllib.request.Request(url), timeout=TIMEOUT) as r:
+            return p["name"], r.read(MAX_PDF_BYTES + 1)[:MAX_PDF_BYTES]
+    except (urllib.error.URLError, TimeoutError, OSError) as e:
+        raise SharePointError(f"Could not download the application file ({getattr(e, 'reason', e)}).")
+
+
+def copy_applications(cfg, rel, last, first, days):
+    """Copy files named <Last>_<First>_... that were modified in the last `days` days from the applications
+    folder (sharepoint_applications_folder) into <sharepoint_folder>/<rel>. Returns (copied names, notes).
+    A file with the same name already in the member's folder is replaced. Subfolders are ignored."""
+    from datetime import datetime, timedelta, timezone
+    if not _clean_path(_get(cfg, "sharepoint_applications_folder") or ""):
+        return [], []
+    drive = _drive_id(cfg)
+    dest = _clean_path(_get(cfg, "sharepoint_folder") or "") + _clean_path(rel)
+    cutoff = datetime.now(timezone.utc) - timedelta(days=days)
+    matches = [it for it, m in _application_items(cfg, drive, last, first) if m >= cutoff]
     if not matches:
         return [], []
     target = _folder_id(drive, dest)
