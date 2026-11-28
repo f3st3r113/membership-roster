@@ -624,6 +624,9 @@ def _write_sharepoint(c, rel, name, pdf):
     return "/".join(p for p in (where, rel, used) if p), link
 
 
+APPLICATIONS = "SharePoint applications"
+
+
 def create_member_folder(m):
     """Make <year>/<MM-Month>/<ID>_<Last>_<First>/ for NEXT month in each storage place (local folder and/or
     SharePoint) and put a filled-in New Member Interview PDF in it. Returns (folder, pdf name or None,
@@ -673,6 +676,13 @@ def create_member_folder(m):
             else:
                 where, link = _write_sharepoint(c, rel, name, pdf)
             results.append((label, True, where, link))
+            if place == "sharepoint" and c.sharepoint_applications_folder:
+                try:
+                    copied, pending = sharepoint.copy_applications(
+                        c, rel, m["last_name"], m["first_name"], c.sharepoint_applications_days)
+                    results.append((APPLICATIONS, True, copied, ""))
+                except sharepoint.SharePointError as exc:
+                    results.append((APPLICATIONS, False, str(exc), ""))
         except (ivw.InterviewError, sharepoint.SharePointError) as exc:
             results.append((label, False, str(exc), ""))
         except OSError as exc:
@@ -704,6 +714,17 @@ def folder_after_save(values, member_id):
         flash(f"Member saved, but no folder was made: {exc}", "error")
         return
     for label, ok, text, link in results:
+        if label == APPLICATIONS:
+            days = cfg().sharepoint_applications_days
+            if not ok:
+                flash(f"Member saved, but copying their application files failed: {text}", "error")
+            elif text:
+                flash(f"Copied {len(text)} application file{'s' if len(text) != 1 else ''} into their SharePoint folder: "
+                      + ", ".join(text), "ok")
+            else:
+                flash(f"No application file for {values['last_name']} (changed in the last {days} days) was found "
+                      "in the applications folder.", "ok")
+            continue
         if ok and pdf and link:
             add_note_link(member_id, link, pdf)
         if not ok:

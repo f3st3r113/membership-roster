@@ -75,3 +75,10 @@ storage: "auto"
 sharepoint_site_url: "https://cicerofd.sharepoint.com/sites/MembershipCommittee"
 sharepoint_library: "Documents"          # shows as "Shared Documents" in the web address
 sharepoint_folder: "General"             # folder inside the library; use e.g. "General/TEST" while trying things out
+
+# Optional: when a new member folder is made in SharePoint, COPY application files from this folder (inside the library)
+# into the member's new folder. A file is copied when its name starts with Lastname_Firstname_ (like
+# Cervantes_Evan_09-05-2026.pdf) and it was last modified within the number of days below. Originals stay put; a file
+# with the same name already in the member's folder is replaced. Leave it empty to turn this off.
+sharepoint_applications_folder: "General/_NewMemberApplications"
+sharepoint_applications_days: 60

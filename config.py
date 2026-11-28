@@ -33,6 +33,8 @@ DEFAULTS = {
     "sharepoint_site_url": None,
     "sharepoint_library": "Documents",
     "sharepoint_folder": None,
+    "sharepoint_applications_folder": None,
+    "sharepoint_applications_days": 60,
     "interviewers": ["Scarano", "Mayers", "Hoffman", "Carlin", "Germain", "Benjamin"],
     "groups": [
         "01-Active Members", "02-Junior Members", "03-In-Active Life Members", "05-Fire Chiefs",
@@ -121,10 +123,16 @@ def _parse(path):
             cfg["storage"] = mode
         else:
             problems.append(f"storage: '{raw['storage']}' must be one of {', '.join(STORAGE_MODES)}")
-    for key in ("sharepoint_site_url", "sharepoint_library", "sharepoint_folder"):
+    for key in ("sharepoint_site_url", "sharepoint_library", "sharepoint_folder", "sharepoint_applications_folder"):
         v = _text(raw, key, problems, 300)
         if v:
             cfg[key] = v
+    if "sharepoint_applications_days" in raw:
+        d = raw["sharepoint_applications_days"]
+        if isinstance(d, int) and not isinstance(d, bool) and 1 <= d <= 3650:
+            cfg["sharepoint_applications_days"] = d
+        else:
+            problems.append("sharepoint_applications_days: expected a whole number of days (1-3650)")
     if cfg["sharepoint_site_url"] and not re.match(r"https://[^/]+/.+", cfg["sharepoint_site_url"]):
         problems.append("sharepoint_site_url: expected something like https://yourtenant.sharepoint.com/sites/SiteName")
         cfg["sharepoint_site_url"] = None

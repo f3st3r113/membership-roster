@@ -172,6 +172,13 @@ ticking the box shows a notice instead (unless SharePoint is set up, see below).
 `local`, `sharepoint`, or `both`. SharePoint files land in
 `<library>/<sharepoint_folder>/<year>/<MM-Month>/<ID>_<Last>_<First>/`. A form with the same name (same member, same day) is replaced; the date is part of the name, so another day keeps the earlier one.
 The link to the PDF in SharePoint is added to the member's **Notes** as a line `New Member Interview form: <link>` (once; saving again doesn't repeat it), and any web links in Notes show as clickable "Open link" lines under the box.
+**Copying application files.** If `sharepoint_applications_folder` is set (the default file uses `General/_NewMemberApplications`),
+saving with the box ticked also **copies** matching files from that folder into the member's new SharePoint folder. A file matches
+when its name starts with `Lastname_Firstname_` (like `Cervantes_Evan_09-05-2026.pdf`; capital letters, spaces and dashes in names
+are ignored) and it was last modified within `sharepoint_applications_days` days (60 by default). Originals stay where they are,
+subfolders are ignored, and a file already in the member's folder with the same name is replaced. A notice lists what was copied.
+Clear `sharepoint_applications_folder` in `config.yaml` to turn this off.
+
 If one place fails (for example SharePoint is unreachable) the other still gets its copy and a notice names the one that failed.
 
 One-time setup, as a Microsoft 365 / Entra administrator:

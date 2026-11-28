@@ -37,25 +37,37 @@ def is_configured(cfg):
     return bool(_get(cfg, "sharepoint_site_url") and all(credentials()))
 
 
+class _NoRedirect(urllib.request.HTTPRedirectHandler):
+    def redirect_request(self, *a, **k):
+        return None
+
+
 def _call(method, url, *, data=None, headers=None, form=None):
     """One HTTP request. Returns (status, parsed JSON or None). Never raises for HTTP status codes."""
+    status, payload, _ = _call_h(method, url, data=data, headers=headers, form=form)
+    return status, payload
+
+
+def _call_h(method, url, *, data=None, headers=None, form=None, follow=True):
+    """Like _call but returns (status, parsed JSON or None, response headers)."""
     hdrs = dict(headers or {})
     if form is not None:
         data = urllib.parse.urlencode(form).encode()
         hdrs["Content-Type"] = "application/x-www-form-urlencoded"
     req = urllib.request.Request(url, data=data, headers=hdrs, method=method)
+    opener = urllib.request.build_opener() if follow else urllib.request.build_opener(_NoRedirect)
     try:
-        with urllib.request.urlopen(req, timeout=TIMEOUT) as r:
-            status, body = r.status, r.read()
+        with opener.open(req, timeout=TIMEOUT) as r:
+            status, body, rh = r.status, r.read(), r.headers
     except urllib.error.HTTPError as e:
-        status, body = e.code, e.read()
+        status, body, rh = e.code, e.read(), e.headers
     except (urllib.error.URLError, TimeoutError, OSError) as e:
         raise SharePointError(f"Could not reach Microsoft 365 ({getattr(e, 'reason', e)}). "
                               "The server needs outbound HTTPS to login.microsoftonline.com and graph.microsoft.com.")
     try:
-        return status, json.loads(body) if body else None
+        return status, json.loads(body) if body else None, rh
     except ValueError:
-        return status, None
+        return status, None, rh
 
 
 def _err(payload):
@@ -162,3 +174,85 @@ def upload(cfg, rel, filename, data):
     if status not in (200, 201):
         raise SharePointError(f"SharePoint upload failed ({status}). {_err(p)}")
     return filename, (p.get("webUrl", "") if isinstance(p, dict) else "")
+
+
+def _folder_id(drive, parts):
+    status, p = _graph("GET", f"/drives/{drive}/root:/{_enc(parts)}")
+    if status != 200 or not p or "id" not in p:
+        raise SharePointError(f"Could not find the SharePoint folder '{'/'.join(parts)}' ({status}). {_err(p)}")
+    return p["id"]
+
+
+def _norm(text):
+    """Letters and digits only, lower case: 'De La Cruz' -> 'delacruz'."""
+    return "".join(ch for ch in str(text).casefold() if ch.isalnum())
+
+
+def _wait_for_copy(monitor_url):
+    """Poll the copy job for a few seconds. Returns 'done', 'failed' or 'pending'."""
+    for _ in range(10):
+        status, p, rh = _call_h("GET", monitor_url, follow=False)
+        state = (p or {}).get("status", "") if isinstance(p, dict) else ""
+        if status == 303 or state == "completed":
+            return "done"
+        if state == "failed":
+            return "failed"
+        time.sleep(1)
+    return "pending"
+
+
+def copy_applications(cfg, rel, last, first, days):
+    """Copy files named <Last>_<First>_... that were modified in the last `days` days from the applications
+    folder (sharepoint_applications_folder) into <sharepoint_folder>/<rel>. Returns (copied names, notes).
+    A file with the same name already in the member's folder is replaced. Subfolders are ignored."""
+    from datetime import datetime, timedelta, timezone
+    src = _clean_path(_get(cfg, "sharepoint_applications_folder") or "")
+    if not src:
+        return [], []
+    drive = _drive_id(cfg)
+    dest = _clean_path(_get(cfg, "sharepoint_folder") or "") + _clean_path(rel)
+    want_last, want_first = _norm(last), _norm(first)
+    if not want_last:
+        return [], []
+    cutoff = datetime.now(timezone.utc) - timedelta(days=days)
+    path = f"/drives/{drive}/root:/{_enc(src)}:/children?$select=id,name,file,lastModifiedDateTime&$top=200"
+    matches = []
+    while path:
+        status, p = _graph("GET", path)
+        if status == 404:
+            raise SharePointError(f"The applications folder '{'/'.join(src)}' was not found in the library.")
+        if status != 200 or not p:
+            raise SharePointError(f"Could not read the applications folder ({status}). {_err(p)}")
+        for it in p.get("value", []):
+            if "file" not in it:
+                continue
+            tokens = it["name"].rsplit(".", 1)[0].split("_")
+            if len(tokens) < 2 or _norm(tokens[0]) != want_last or (want_first and _norm(tokens[1]) != want_first):
+                continue
+            try:
+                modified = datetime.fromisoformat(it["lastModifiedDateTime"].replace("Z", "+00:00"))
+            except (KeyError, ValueError):
+                continue
+            if modified >= cutoff:
+                matches.append(it)
+        nxt = (p.get("@odata.nextLink") or "")
+        path = nxt.replace(GRAPH_URL, "", 1) if nxt.startswith(GRAPH_URL) else None
+    if not matches:
+        return [], []
+    target = _folder_id(drive, dest)
+    copied, notes = [], []
+    for it in matches:
+        status, p, rh = _call_h("POST", GRAPH_URL + f"/drives/{drive}/items/{it['id']}/copy"
+                                "?@microsoft.graph.conflictBehavior=replace",
+                                data=json.dumps({"parentReference": {"driveId": drive, "id": target}}).encode(),
+                                headers={"Authorization": f"Bearer {_token()}", "Content-Type": "application/json"})
+        if status not in (200, 202):
+            raise SharePointError(f"Could not copy '{it['name']}' ({status}). {_err(p)}")
+        monitor = rh.get("Location") if rh else None
+        outcome = _wait_for_copy(monitor) if monitor else "done"
+        if outcome == "failed":
+            raise SharePointError(f"SharePoint could not copy '{it['name']}'.")
+        copied.append(it["name"])
+        if outcome == "pending":
+            notes.append(it["name"])
+    return copied, notes
