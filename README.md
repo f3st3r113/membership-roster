@@ -158,7 +158,7 @@ e.g. run on 28 Nov 2026:  /nmd/2026/12-December/2103_Johnson_Roberto/New_Member_
 ```
 
 If there is no ID # the folder starts with an underscore (`_Johnson_Roberto`). If the folder already exists the new form is
-simply added to it (a second form the same day gets `_2`); nothing is overwritten. The box is unticked each time the page
+simply added to it (a form with the same name, i.e. the same member on the same day, is replaced). The box is unticked each time the page
 loads, so a folder is only made when you ask for it. If the Membership Class (or Response Type) isn't filled in yet, the
 folder is still created and a notice says the form needs them; fill them in and save again with the box ticked to add the form.
 
@@ -170,7 +170,7 @@ ticking the box shows a notice instead (unless SharePoint is set up, see below).
 
 `storage` in `config.yaml` chooses where the folders go: `auto` (every place that is set up; the default),
 `local`, `sharepoint`, or `both`. SharePoint files land in
-`<library>/<sharepoint_folder>/<year>/<MM-Month>/<ID>_<Last>_<First>/`. Nothing is ever overwritten (a taken name gets `_2`).
+`<library>/<sharepoint_folder>/<year>/<MM-Month>/<ID>_<Last>_<First>/`. A form with the same name (same member, same day) is replaced; the date is part of the name, so another day keeps the earlier one.
 If one place fails (for example SharePoint is unreachable) the other still gets its copy and a notice names the one that failed.
 
 One-time setup, as a Microsoft 365 / Entra administrator:

@@ -152,18 +152,13 @@ def make_folders(cfg, rel):
 
 
 def upload(cfg, rel, filename, data):
-    """Upload bytes as <sharepoint_folder>/<rel>/<filename>. Never overwrites: a taken name gets _2, _3...
-    Returns the file name used. Folders are created automatically."""
+    """Upload bytes as <sharepoint_folder>/<rel>/<filename>, replacing a file of the same name.
+    Folders are created automatically. Returns the file name."""
     drive = _drive_id(cfg)
     base = _clean_path(_get(cfg, "sharepoint_folder") or "") + _clean_path(rel)
-    stem, dot, ext = filename.rpartition(".")
-    for n in range(1, 50):
-        name = filename if n == 1 else f"{stem}_{n}{dot}{ext}"
-        status, p = _graph("PUT", f"/drives/{drive}/root:/{_enc(base + [name])}:/content"
-                                   "?@microsoft.graph.conflictBehavior=fail",
-                           raw=data, content_type="application/pdf")
-        if status in (200, 201):
-            return name
-        if status != 409:
-            raise SharePointError(f"SharePoint upload failed ({status}). {_err(p)}")
-    raise SharePointError("Too many files with the same name in that SharePoint folder.")
+    status, p = _graph("PUT", f"/drives/{drive}/root:/{_enc(base + [filename])}:/content"
+                               "?@microsoft.graph.conflictBehavior=replace",
+                       raw=data, content_type="application/pdf")
+    if status not in (200, 201):
+        raise SharePointError(f"SharePoint upload failed ({status}). {_err(p)}")
+    return filename

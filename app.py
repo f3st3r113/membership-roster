@@ -609,10 +609,7 @@ def _write_local(rel, name, pdf):
     folder.mkdir(parents=True, exist_ok=True)
     if pdf is None:
         return rel
-    target, n = folder / name, 1
-    while target.exists():  # never overwrite an earlier form
-        n += 1
-        target = folder / f"{Path(name).stem}_{n}.pdf"
+    target = folder / name  # same name = the earlier form is replaced
     tmp = target.with_name("." + target.name + ".tmp")
     tmp.write_bytes(pdf)
     os.replace(tmp, target)
