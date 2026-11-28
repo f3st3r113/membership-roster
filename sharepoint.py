@@ -248,8 +248,8 @@ def get_application(cfg, item_id):
     """Bytes of one file from the applications folder (refuses anything outside that folder)."""
     drive = _drive_id(cfg)
     src = "/".join(_clean_path(_get(cfg, "sharepoint_applications_folder") or ""))
-    status, p = _graph("GET", f"/drives/{drive}/items/{urllib.parse.quote(item_id, safe='')}"
-                              "?$select=id,name,size,file,parentReference,@microsoft.graph.downloadUrl")
+    item = f"/drives/{drive}/items/{urllib.parse.quote(item_id, safe='')}"
+    status, p = _graph("GET", item)
     if status != 200 or not p or "file" not in p:
         raise SharePointError(f"The application file could not be found ({status}). {_err(p)}")
     parent = urllib.parse.unquote((p.get("parentReference") or {}).get("path", ""))
@@ -258,8 +258,12 @@ def get_application(cfg, item_id):
     if int(p.get("size", 0)) > MAX_PDF_BYTES:
         raise SharePointError("The application file is too large to read.")
     url = p.get("@microsoft.graph.downloadUrl")
-    if not url:
-        raise SharePointError("SharePoint did not give a download link for that file.")
+    if not url:  # ask for the file itself: Graph answers with a redirect to a ready-to-use download address
+        st, _, rh = _call_h("GET", GRAPH_URL + item + "/content", headers={"Authorization": f"Bearer {_token()}"},
+                            follow=False)
+        url = rh.get("Location") if rh and st in (301, 302, 303, 307, 308) else None
+        if not url:
+            raise SharePointError(f"SharePoint did not give a download link for that file ({st}).")
     try:
         with urllib.request.urlopen(urllib.request.Request(url), timeout=TIMEOUT) as r:
             return p["name"], r.read(MAX_PDF_BYTES + 1)[:MAX_PDF_BYTES]
