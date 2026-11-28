@@ -27,6 +27,45 @@ HEADINGS = {"personal information", "employment information", "violations", "pre
             "membership category"}
 
 
+KEEP_UPPER = {"PO", "NE", "NW", "SE", "SW", "II", "III", "IV", "RR"}
+
+
+def _title_word(w):
+    if not w:
+        return w
+    if w.upper() in KEEP_UPPER:
+        return w.upper()
+    if re.fullmatch(r"\d+(st|nd|rd|th)", w, re.I):
+        return w.lower()
+    letters = [ch for ch in w if ch.isalpha()]
+    if letters and not (all(ch.isupper() for ch in letters) or all(ch.islower() for ch in letters)):
+        return w  # already mixed case (McDonald, DeWitt): leave it alone
+    return w[:1].upper() + w[1:].lower() if w[:1].isalpha() else w[:1] + _title_word(w[1:])
+
+
+def smart_title(text):
+    """'evan' / 'EVAN' -> 'Evan'; '7960 JOSS FARM WAY' -> '7960 Joss Farm Way'; keeps McDonald, PO, NE, 2nd."""
+    def word(token):
+        def one(m):
+            head, _, tail = m.group(0).partition("'")
+            if not tail:
+                return _title_word(head)
+            # O'Brien, D'Angelo: capitalise after a one-letter prefix; otherwise it is a contraction (Smith's)
+            return _title_word(head) + "'" + (_title_word(tail) if len(head) == 1 else tail.lower())
+        return re.sub(r"[^\W_]+(?:'[^\W_]+)?", one, token)
+    return " ".join(word(t) for t in str(text).split())
+
+
+def state_code(text):
+    """'New York' / 'N.Y.' / 'ny' -> 'NY'; anything else is returned unchanged."""
+    s = re.sub(r"[.\s]+", " ", str(text)).strip()
+    if s.lower() in STATES:
+        return STATES[s.lower()]
+    if re.fullmatch(r"[A-Za-z] ?[A-Za-z]", s) and s.replace(" ", "").upper() in ABBREVIATIONS:
+        return s.replace(" ", "").upper()
+    return str(text).strip()
+
+
 def pdf_text(data):
     from pypdf import PdfReader
     reader = PdfReader(io.BytesIO(data))
@@ -157,4 +196,9 @@ def parse(data, typed_last="", typed_first="", classes=(), responses=()):
             out["response_type"] = r
         else:
             notes.append(f"Response type '{resp}' does not match a Response Type.")
+    for key in ("first_name", "last_name", "address", "city"):
+        if key in out:
+            out[key] = smart_title(out[key])
+    if "state" in out:
+        out["state"] = state_code(out["state"])
     return out, notes

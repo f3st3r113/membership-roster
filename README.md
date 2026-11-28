@@ -174,9 +174,9 @@ ticking the box shows a notice instead (unless SharePoint is set up, see below).
 The link to the PDF in SharePoint is added to the member's **Notes** as a line `New Member Interview form: <link>` (once; saving again doesn't repeat it), and any web links in Notes show as clickable "Open link" lines under the box.
 **Find application (Add Member page).** With SharePoint and `sharepoint_applications_folder` set, the Add Member page has a
 **Find application** box. Type Last name (and First name if you like), click **Search**, then **Use** next to the file you want.
-The app reads the application PDF and fills in the form: First/Last Name, Street, City, State (as the two-letter code), Zip,
+The app reads the application PDF and fills in the form: First/Last Name, Street, City, State (always the two-letter code, also when typed in full on the form), Zip,
 Mobile Phone, E-mail, Membership Class (Interior/Exterior/Junior/Driver/EMS/Associate/Fire Police) and Response Type
-(Respond from Home = Normal, Duty Hour(s) = Duty Hours). Only **blank** fields are filled, nothing is saved until you click
+(Respond from Home = Normal, Duty Hour(s) = Duty Hours). Names, street and city are put in Title Case (McDonald, PO and NE are kept as they are). **Create new member folder** is ticked for you. Only **blank** fields are filled, nothing is saved until you click
 Save, and the file is only read, never changed. The street/city split of the address is a best guess, so check it. The PDF must be
 typed text (not a scan) in the standard application layout.
 

@@ -568,6 +568,8 @@ def read_form():
         raw = request.form.get(col, "").replace("\r\n", "\n").strip()
         if col in ("home_phone", "mobile_phone"):
             raw = format_phone(raw)
+        elif col == "state":
+            raw = appform.state_code(raw)
         if len(raw) > maxlen:
             errors.append(f"{label} is too long (max {maxlen} characters).")
         values[col] = raw
