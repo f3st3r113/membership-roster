@@ -197,8 +197,8 @@ passwords or delete them. Everyone can change their own password by clicking the
 
 | Role | Can do |
 |---|---|
-| Administrator | Everything an editor can, plus manage users and export Mobile Info |
-| Editor | Add, edit and delete members |
+| Administrator | Everything an editor can, plus delete members, manage users and export Mobile Info |
+| Editor | Add and edit members |
 | Viewer | Search and view members, save/print the roster |
 
 Passwords need at least 10 characters and are stored only as salted hashes (never in plain text).

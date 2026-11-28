@@ -273,7 +273,7 @@ def admin_required(view):
     @login_required
     def wrapped(*args, **kwargs):
         if not g.user["is_admin"]:
-            abort(403, "Only administrators can manage users.")
+            abort(403, "This action is limited to administrators.")
         return view(*args, **kwargs)
 
     return wrapped
@@ -703,7 +703,7 @@ def member_edit(member_id):
 
 
 @app.route("/members/<int:member_id>/delete", methods=["POST"])
-@edit_required
+@admin_required
 def member_delete(member_id):
     cur = get_db().execute("DELETE FROM members WHERE id = ?", (member_id,))
     get_db().commit()

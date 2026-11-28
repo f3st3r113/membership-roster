@@ -69,11 +69,11 @@
   </div>
 </form>
 
-{% if m and can_edit %}
+{% if m and current_user['is_admin'] %}
 <form method="post" action="{{ url_for('member_delete', member_id=m['id']) }}" class="delete-form"
-      onsubmit="return confirm('Permanently delete this member? Consider unchecking Active instead.')">
+      onsubmit="return confirm('Permanently delete {{ (v.first_name ~ ' ' ~ v.last_name)|trim|e }}? This cannot be undone. Consider unchecking Active instead.')">
   <input type="hidden" name="_csrf" value="{{ csrf_token() }}">
-  <button class="btn btn-danger">Delete member…</button>
+  <button class="btn btn-danger">Delete Member…</button>
 </form>
 {% endif %}
 {% endblock %}
