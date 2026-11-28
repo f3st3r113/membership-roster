@@ -21,6 +21,9 @@ theme_color: "#1d9a45"
 # Color of the banner strip at the top of the printed roster (the PDF).
 roster_banner_color: "#cbd4e4"
 
+# Time zone used for "today" (roster date, interview forms). Names like America/New_York, America/Chicago, UTC.
+timezone: "America/New_York"
+
 # Membership groups, in the order shown. The number prefix controls sorting and is hidden on the
 # printed roster ("01-Active Members" prints as "Active Members"). The first one is the default for
 # new members. Members whose group is not listed here still appear; it just isn't offered for new entries.
@@ -34,3 +37,28 @@ groups:
   - "08-Honorary Members"
   - "09-Line of Duty Family"
   - "10-Hall Coordinator"
+
+# Choices offered on the member form.
+response_types:
+  - "Normal"
+  - "Duty Hours"
+
+# The interview form has built-in requirements for these classes (Interior, Exterior, Junior, EMS, Driver,
+# Fire Police, Associate). Add or rename classes only if you also adjust interview.py.
+membership_classes:
+  - "Interior"
+  - "Exterior"
+  - "Junior"
+  - "EMS"
+  - "Driver"
+  - "Fire Police"
+  - "Associate"
+
+# Names printed with a check box along the bottom of the New Member Interview form (a blank box is always added).
+interviewers:
+  - "Scarano"
+  - "Mayers"
+  - "Hoffman"
+  - "Carlin"
+  - "Germain"
+  - "Benjamin"

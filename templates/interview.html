@@ -1,0 +1,110 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>New Member Interview - {{ f.name }}</title>
+<style>
+  /* Letter page, laid out in points to match the paper New Member Interview form. */
+  @page { size: 612pt 792pt; margin: 0; }
+  html, body { margin: 0; padding: 0; }
+  body { position: relative; width: 612pt; height: 792pt; font-family: "Calibri", "Carlito", Arial, sans-serif;
+         font-size: 9.5pt; color: #000; -weasyprint-hyphens: none; }
+  .t { position: absolute; white-space: nowrap; line-height: 1.19; }
+  .b { font-weight: bold; }
+  .big { font-size: 10.65pt; }
+  .val { color: #548235; font-weight: bold; overflow: hidden; text-overflow: ellipsis; }
+  .sm { font-size: 8pt; } .xs { font-size: 7pt; }
+  .line { position: absolute; border-bottom: 0.75pt solid #000; height: 0; }
+  .cell { position: absolute; text-align: center; color: #548235; font-weight: bold; font-size: 10.65pt;
+          line-height: 1.19; border-bottom: 0.75pt solid #000; white-space: nowrap; height: 13.7pt; }
+  .box { position: absolute; width: 6.8pt; height: 7pt; border: 0.9pt solid #305496; box-sizing: border-box; }
+  .tiny { font-size: 6.3pt; }
+  .step { font-size: 9.5pt; }
+  .date { position: absolute; text-align: center; color: #305496; font-weight: bold; font-size: 10.65pt; line-height: 1.19;
+          width: 84.8pt; left: 221pt; white-space: nowrap; }
+  .bar { position: absolute; left: 50pt; width: 459.8pt; top: 482.8pt; height: 14pt; box-sizing: border-box;
+         background: #d9d9d9; border-top: 1.4pt solid #000; border-bottom: 1.75pt solid #000; }
+  .who { position: absolute; left: 71.6pt; width: 478.2pt; top: 586.6pt; display: flex; justify-content: space-between;
+         align-items: center; font-size: 6.3pt; }
+  .who span { display: inline-flex; align-items: center; white-space: nowrap; }
+  .who i { display: inline-block; width: 6.3pt; height: 6.3pt; border: 0.6pt solid #7f7f7f; box-sizing: border-box; margin-right: 4pt; }
+  .who u { display: inline-block; width: 73.6pt; border-bottom: 0.5pt solid #000; height: 7pt; margin-left: 4pt; text-decoration: none; }
+</style>
+</head>
+<body>
+  {# --- header block ------------------------------------------------------ #}
+  {% for label, top in (("Date", 55.9), ("Name", 69.0), ("Address", 82.1), ("Response Location", 95.2), ("Response Type", 108.2)) %}
+  <div class="t" style="left:52.4pt; top:{{ top }}pt;">{{ label }}</div>
+  {% endfor %}
+  {% for text, top in ((f.date, 55.9), (f.name, 69.0), (f.address, 82.1), (f.location, 95.2), (f.response_type, 108.2)) %}
+  <div class="t val {{ 'xs' if text|length > 52 else 'sm' if text|length > 42 }}" style="left:171.7pt; top:{{ top }}pt; max-width:200pt;">{{ text }}</div>
+  {% endfor %}
+  {% for bottom in (67.0, 80.0, 93.2, 106.2, 119.2) %}
+  <div class="line" style="left:169.5pt; width:204.7pt; top:{{ bottom }}pt;"></div>
+  {% endfor %}
+
+  <div class="t" style="left:398.9pt; top:55.9pt;">Email</div>
+  <div class="t val {{ 'xs' if f.email|length > 38 else 'sm' if f.email|length > 30 }}" style="left:398.9pt; top:69.0pt; max-width:160pt;">{{ f.email }}</div>
+  <div class="line" style="left:396.5pt; width:164pt; top:67.0pt;"></div>
+  <div class="line" style="left:396.5pt; width:164pt; top:80.0pt;"></div>
+
+  {# --- requirements ------------------------------------------------------ #}
+  <div class="t big" style="left:52.4pt; top:130.6pt;">Are you able to meet the requirements of membership?</div>
+  <div class="t big b" style="left:52.4pt; top:146pt;">Class</div>
+  <div class="cell" style="left:113.2pt; width:57pt; top:146pt;">{{ f.membership_class }}</div>
+  <div class="t big b" style="left:171.7pt; top:146pt;">Drills</div>
+  <div class="cell" style="left:221pt; width:84.8pt; top:146pt;">{{ f.drills }}</div>
+  <div class="t big b" style="left:307.2pt; top:146pt;">Meetings</div>
+  <div class="cell" style="left:356.5pt; width:40.7pt; top:146pt;">{{ f.meetings }}</div>
+  <div class="t big b" style="left:414.3pt; top:146pt; display:flex; align-items:flex-start; gap:16pt;">
+    <span>{{ f.call_label }}</span>
+    <span class="cell" style="position:static; width:54pt; display:block;">{{ f.call_value }}</span>
+  </div>
+
+  <div class="box" style="left:54.8pt; top:173.2pt;"></div>
+  <div class="t tiny" style="left:63.9pt; top:172.8pt;">Additional Time (Details, Parades, etc)</div>
+  <div class="box" style="left:54.8pt; top:184.5pt;"></div>
+  <div class="t tiny" style="left:63.9pt; top:184.3pt;">New Firefighter Training - EMS, Engine Co, Truck Co, etc</div>
+  <div class="t b" style="left:307.2pt; top:171.4pt;">BEFO</div>
+  <div class="t" style="left:365.8pt; top:171.4pt;">Y</div><div class="t" style="left:381.9pt; top:171.4pt;">N</div>
+  <div class="t b" style="left:420.4pt; top:171.4pt;">IFO</div>
+  <div class="t" style="left:458.1pt; top:171.4pt;">Y</div><div class="t" style="left:474.3pt; top:171.4pt;">N</div>
+
+  {# --- questions (space to write by hand) ------------------------------- #}
+  {% for q, top in (("What makes you want to join the department?", 206.0),
+                    ("What do you feel you can bring to the department and community?", 263.8),
+                    ("What have you done to prepare for becoming a Firefighter?", 321.5),
+                    ("Where do you see yourself in 3 years?", 379.3),
+                    ("Questions for us?", 437.0)) %}
+  <div class="t" style="left:52.4pt; top:{{ top }}pt;">{{ q }}</div>
+  {% endfor %}
+
+  {# --- next steps -------------------------------------------------------- #}
+  <div class="bar"></div>
+  <div class="t b" style="left:52.4pt; top:484pt;">Next Steps</div>
+  {% for box_top in (500.0, 512.0, 525.2, 538.2, 551.2) %}
+  <div class="box" style="left:54pt; top:{{ box_top }}pt;"></div>
+  {% endfor %}
+  <div class="t step" style="left:64.7pt; top:496.3pt;">Arson/Background Check</div>
+  <div class="t step" style="left:64.7pt; top:508.6pt;">Present to Membership</div>
+  <div class="t step" style="left:64.7pt; top:521.7pt;">Present to Commissioners</div>
+  <div class="t step" style="left:64.7pt; top:534.8pt;">Physical</div>
+  <div class="t step" style="left:64.7pt; top:547.9pt;">Current CPR</div>
+  <div class="t step" style="left:131.7pt; top:547.9pt;">Y</div><div class="t step" style="left:148pt; top:547.9pt;">N</div>
+  <div class="t step" style="left:192.5pt; top:547.9pt;">Expires</div>
+
+  <div class="date" style="top:507.2pt;">{{ f.membership_date }}</div>
+  <div class="date" style="top:520.3pt;">{{ f.commissioners_date }}</div>
+  <div class="date" style="top:533.4pt;">{{ f.physical_date }}</div>
+  {% for bottom in (520.5, 533.5, 546.8, 559.8) %}
+  <div class="line" style="left:221pt; width:84.8pt; top:{{ bottom }}pt;"></div>
+  <div class="t step" style="left:307.2pt; top:{{ bottom - 11.9 }}pt;">(date)</div>
+  {% endfor %}
+
+  {# --- interviewers ------------------------------------------------------ #}
+  <div class="who">
+    {% for name in f.interviewers %}<span><i></i>{{ name }}</span>{% endfor %}
+    <span><i></i><u></u></span>
+  </div>
+</body>
+</html>

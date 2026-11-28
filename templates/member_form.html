@@ -15,6 +15,8 @@
     {% if can_edit %}
       <button class="btn btn-primary" name="action" value="save">Save</button>
       <button class="btn" name="action" value="save_new">Save and New</button>
+      {% if interview_enabled %}<button class="btn" name="action" value="interview"
+        title="Saves this member, then creates the interview folder and a filled-in New Member Interview PDF">New Member Interview</button>{% endif %}
     {% endif %}
     {% if m and v.email %}<a class="btn" href="mailto:{{ v.email }}">E-mail</a>{% endif %}
     {% if m %}<a class="btn" href="{{ url_for('member_vcard', member_id=m['id']) }}">Save as Contact (.vcf)</a>{% endif %}
@@ -47,6 +49,20 @@
       <label>Mobile Phone <input name="mobile_phone" value="{{ v.mobile_phone }}" {{ dis }}></label>
       <label>E-mail <input name="email" type="email" value="{{ v.email }}" {{ dis }}></label>
       <label>Fire Station <input name="fire_station" value="{{ v.fire_station }}" {{ dis }}></label>
+      <div class="row2">
+        <label>Response Type
+          <select name="response_type" {{ dis }}>
+            <option value=""></option>
+            {% for o in cfg.response_types + ([v.response_type] if v.response_type and v.response_type not in cfg.response_types else []) %}<option {{ 'selected' if o == v.response_type }}>{{ o }}</option>{% endfor %}
+          </select>
+        </label>
+        <label>Membership Class
+          <select name="membership_class" {{ dis }}>
+            <option value=""></option>
+            {% for o in cfg.membership_classes + ([v.membership_class] if v.membership_class and v.membership_class not in cfg.membership_classes else []) %}<option {{ 'selected' if o == v.membership_class }}>{{ o }}</option>{% endfor %}
+          </select>
+        </label>
+      </div>
       <label>Notes <textarea name="notes" rows="9" {{ dis }}>{{ v.notes }}</textarea></label>
     </div>
   </div>

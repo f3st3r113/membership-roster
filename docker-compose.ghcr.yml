@@ -5,6 +5,7 @@
 #     PUID / PGID          numeric owner of the data folder (run `id <user>` over SSH)
 #     CFD_ADMIN_PASSWORD   password for the first "admin" login (only read on first start)
 #     CFD_COOKIE_SECURE    1 once served over HTTPS (default 0)
+#     NEW_MEMBER_HOST_DIR  (optional) folder on the host where New Member Interview folders/PDFs are created
 #     DATA_DIR             folder on the host for the database and config.yaml (default: the Synology path below)
 #
 # To update: redeploy the stack. pull_policy "always" fetches the newest image each time.
@@ -20,7 +21,10 @@ services:
     user: "${PUID:-1000}:${PGID:-1000}"
     volumes:
       - ${DATA_DIR:-/volume1/docker/cfd-roster/data}:/data    # database, config.yaml, logo; must be writable by PUID:PGID
+      # New Member Interview folders (optional, enables the button). Must be writable by PUID:PGID.
+      # - ${NEW_MEMBER_HOST_DIR}:/nmd
     environment:
       CFD_ADMIN_USER: "admin"
       CFD_ADMIN_PASSWORD: "${CFD_ADMIN_PASSWORD:-}"
       CFD_COOKIE_SECURE: "${CFD_COOKIE_SECURE:-0}"
+      # NEW_MEMBER_DIR: "/nmd"      # uncomment together with the /nmd volume above

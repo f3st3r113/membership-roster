@@ -24,6 +24,7 @@ All data lives in a single `data/` folder, and member data is never part of this
 | `templates/`, `static/` | Pages, stylesheets, scripts, logo |
 | `Dockerfile`, `requirements.txt` | How the image is built |
 | `docker-compose.yml` | For `docker compose up --build` from this folder |
+| `interview.py`, `templates/interview.html` | New Member Interview rules and the PDF form layout |
 | `config.default.yaml`, `config.py` | Template and loader for the settings file (see [Settings](#settings-configyaml)) |
 | `VERSION` | Current version (shown at the bottom of every page) |
 | `docker-compose.ghcr.yml` | Stack that pulls the published image from ghcr.io (easiest; no clone or build) |
@@ -144,6 +145,49 @@ not touched. Refresh the browser once so it picks up new stylesheets.
 * **Synology Container Manager project:** copy this folder to the NAS, create a project pointing at it, use
   `docker-compose.yml`, and set `CFD_ADMIN_PASSWORD`, `PUID` and `PGID`.
 
+## New Member Interview
+
+The member form has two extra fields, **Response Type** (Normal, Duty Hours) and **Membership Class**
+(Interior, Exterior, Junior, EMS, Driver, Fire Police, Associate), and a **New Member Interview** button next
+to *Save and New*. The button saves the member (like *Save*), then creates this folder and puts a filled-in
+interview form (PDF) in it:
+
+```
+<NEW_MEMBER_DIR>/<year>/<Month>/<ID #>_<Last>_<First>/New_Member_Interview_<Last>_<First>_<date>.pdf
+e.g.  /nmd/2026/November/2103_Johnson_Roberto/New_Member_Interview_Johnson_Roberto_2026-11-28.pdf
+```
+
+If there is no ID # the folder starts with an underscore (`_Johnson_Roberto`). If the folder already exists the new
+form is simply added to it (a second form the same day gets `_2`); nothing is ever overwritten.
+
+**Setup:** mount the host folder at `/nmd` and set `NEW_MEMBER_DIR` to `/nmd` in the stack (see the commented
+lines in `docker-compose.ghcr.yml`). The folder must exist and be writable by `PUID:PGID`. Without
+`NEW_MEMBER_DIR` the button is hidden. Dates use the `timezone` setting in `config.yaml`.
+
+What the form fills in:
+
+| Form field | Filled from |
+|---|---|
+| Date | Today (MM/DD/YY) |
+| Name, Email | First Last, E-mail |
+| Address | Street, City, State Zip |
+| Response Location | Fire Station, as `Station <number>` |
+| Response Type, Class | Response Type, Membership Class |
+| Drills / Meetings / Call % | From the class and response type (table below) |
+| Present to Membership | First Thursday of next month |
+| Present to Commissioners | Second Tuesday of next month |
+| Physical | Last Wednesday of next month |
+| Check boxes along the bottom | The `interviewers` list in `config.yaml`, plus one blank box |
+
+| Class | Drills | Meetings | Normal | Duty Hours |
+|---|---|---|---|---|
+| Interior, Exterior, Junior | 16 | 6 | Call % 10% | Hours 288 |
+| EMS, Driver, Fire Police | 8 | 6 | Call % 10% | Hours 288 |
+| Associate | NA | 6 | Hours per Quarter 60 (either response type) | |
+
+Membership Class is required for the button, and Response Type is required for every class except Associate.
+The rules are in `interview.py`; the layout is `templates/interview.html`.
+
 ## Users
 
 Administrators manage logins in the app: **Users** (top right) to add people, change roles, reset
@@ -238,6 +282,9 @@ Branding and membership groups are set in `config.yaml`, which lives in the data
 | `logo_file` | Logo image (png, jpg, gif, svg, webp; max 2 MB). A plain file name is looked up in the data folder; if missing, the built-in logo is used |
 | `theme_color` | Hex color for the banner, buttons and links (for example `"#1d9a45"`). Dark mode adjusts it automatically. White text is drawn on it, so pick a medium or dark color |
 | `roster_banner_color` | Hex color of the banner strip on the printed roster |
+| `timezone` | Time zone for "today" (for example `America/New_York`) |
+| `response_types`, `membership_classes` | Choices on the member form |
+| `interviewers` | Names with check boxes at the bottom of the interview form |
 | `groups` | Membership groups in the order shown. The number prefix sorts them and is hidden on the printed roster; the first is the default for new members |
 
 A bad value is ignored (the default is used) and a warning is written to the container log

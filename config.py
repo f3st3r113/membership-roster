@@ -8,6 +8,7 @@ import os
 import re
 import shutil
 from pathlib import Path
+from zoneinfo import ZoneInfo, ZoneInfoNotFoundError
 
 import yaml
 
@@ -25,6 +26,10 @@ DEFAULTS = {
     "logo_file": "logo.png",
     "theme_color": "#1d9a45",
     "roster_banner_color": "#cbd4e4",
+    "timezone": "UTC",
+    "response_types": ["Normal", "Duty Hours"],
+    "membership_classes": ["Interior", "Exterior", "Junior", "EMS", "Driver", "Fire Police", "Associate"],
+    "interviewers": ["Scarano", "Mayers", "Hoffman", "Carlin", "Germain", "Benjamin"],
     "groups": [
         "01-Active Members", "02-Junior Members", "03-In-Active Life Members", "05-Fire Chiefs",
         "06-Commissioners", "07-Auxiliary Members", "08-Honorary Members", "09-Line of Duty Family",
@@ -59,6 +64,23 @@ def _text(raw, key, problems, max_len=200):
     return None
 
 
+def _names(value, allow_empty=False):
+    """A YAML list (or one comma-separated line) of names -> cleaned unique list, or None if invalid."""
+    if isinstance(value, str):
+        value = [p.strip() for p in value.split(",")]
+    if not isinstance(value, list) or (not value and not allow_empty):
+        return None
+    if not all(isinstance(x, (str, int)) and str(x).strip() for x in value):
+        return None
+    seen, out = set(), []
+    for x in value:
+        x = str(x).strip()
+        if x.lower() not in seen:
+            seen.add(x.lower())
+            out.append(x)
+    return out
+
+
 def _parse(path):
     problems, raw = [], {}
     try:
@@ -87,20 +109,20 @@ def _parse(path):
                 cfg[key] = color
             else:
                 problems.append(f"{key}: '{raw[key]}' is not a hex color like #1d9a45")
-    if "groups" in raw:
-        g = raw["groups"]
-        if isinstance(g, str):  # allow a comma-separated line too
-            g = [p.strip() for p in g.split(",")]
-        if isinstance(g, list) and g and all(isinstance(x, (str, int)) and str(x).strip() for x in g):
-            seen, groups = set(), []
-            for x in g:
-                x = str(x).strip()
-                if x.lower() not in seen:
-                    seen.add(x.lower())
-                    groups.append(x)
-            cfg["groups"] = groups
-        else:
-            problems.append("groups: expected a list of group names")
+    for key in ("groups", "response_types", "membership_classes", "interviewers"):
+        if key in raw:
+            items = _names(raw[key])
+            if items is not None:
+                cfg[key] = items
+            else:
+                problems.append(f"{key}: expected a list of names")
+    if "timezone" in raw:
+        tz = _text(raw, "timezone", problems, 60)
+        try:
+            ZoneInfo(tz or "UTC")
+            cfg["timezone"] = tz or cfg["timezone"]
+        except (ZoneInfoNotFoundError, ValueError):
+            problems.append(f"timezone: '{raw['timezone']}' is not a known time zone (for example America/New_York)")
 
     theme = cfg["theme_color"]
     cfg["css_vars"] = {
@@ -134,6 +156,12 @@ def get_config(path):
             log.warning("config %s: %s", path, p)
         _cache.update(key=key, cfg=cfg)
     return _cache["cfg"]
+
+
+def now_local(tz_name):
+    """Current date/time in the given time zone (the timezone setting)."""
+    from datetime import datetime
+    return datetime.now(ZoneInfo(tz_name))
 
 
 def _parse_defaults(path):

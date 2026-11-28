@@ -17,6 +17,7 @@ from urllib.parse import urlparse
 
 import click
 import config as settings
+import interview as ivw
 from flask import (Flask, Response, abort, flash, g, redirect, render_template,
                    jsonify, request, session, url_for)
 from werkzeug.security import check_password_hash, generate_password_hash
@@ -53,6 +54,8 @@ TEXT_FIELDS = [
     ("mobile_phone", "Mobile Phone", 40),
     ("email", "E-mail", 200),
     ("fire_station", "Fire Station", 20),
+    ("response_type", "Response Type", 30),
+    ("membership_class", "Membership Class", 30),
     ("notes", "Notes", 5000),
 ]
 FIELD_MAX = {c: m for c, _, m in TEXT_FIELDS}
@@ -74,6 +77,8 @@ CREATE TABLE IF NOT EXISTS members (
     mobile_phone      TEXT NOT NULL DEFAULT '',
     email             TEXT NOT NULL DEFAULT '',
     fire_station      TEXT NOT NULL DEFAULT '',
+    response_type     TEXT NOT NULL DEFAULT '',
+    membership_class  TEXT NOT NULL DEFAULT '',
     notes             TEXT NOT NULL DEFAULT '',
     active            INTEGER NOT NULL DEFAULT 1
 );
@@ -109,6 +114,11 @@ def init_db():
             conn.execute("ALTER TABLE users ADD COLUMN is_admin INTEGER NOT NULL DEFAULT 0")
             conn.execute("UPDATE users SET is_admin = 1, can_edit = 1 "
                          "WHERE id = (SELECT MIN(id) FROM users)")
+        # upgrade older databases: response type / membership class columns
+        mcols = {r["name"] for r in conn.execute("PRAGMA table_info(members)")}
+        for col in ("response_type", "membership_class"):
+            if col not in mcols:
+                conn.execute(f"ALTER TABLE members ADD COLUMN {col} TEXT NOT NULL DEFAULT ''")
         admin_pw = os.environ.get("CFD_ADMIN_PASSWORD")
         if admin_pw and not conn.execute("SELECT 1 FROM users LIMIT 1").fetchone():
             conn.execute(
@@ -218,7 +228,7 @@ def inject_helpers():
         return session["_csrf"]
 
     return {"csrf_token": csrf_token, "current_user": g.get("user"), "cfg": cfg(),
-            "app_version": APP_VERSION}
+            "app_version": APP_VERSION, "interview_enabled": bool(os.environ.get("NEW_MEMBER_DIR", "").strip())}
 
 
 @app.route("/branding/logo")
@@ -559,10 +569,72 @@ def read_form():
         if len(raw) > maxlen:
             errors.append(f"{label} is too long (max {maxlen} characters).")
         values[col] = raw
+    for col, label, options in (("response_type", "Response Type", cfg().response_types),
+                                ("membership_class", "Membership Class", cfg().membership_classes)):
+        if values[col] and values[col] not in options:
+            errors.append(f"{label} must be one of: {', '.join(options)}.")
     values["active"] = request.form.get("active") == "1"
     if not values["last_name"]:
         errors.append("Last Name is required.")
     return values, errors
+
+
+def create_interview(m):
+    """Make <NEW_MEMBER_DIR>/<year>/<Month>/<ID>_<Last>_<First>/ (if needed) and put a filled-in
+    New Member Interview PDF in it. Returns a short description of where it went."""
+    base = os.environ.get("NEW_MEMBER_DIR", "").strip()
+    if not base:
+        raise ivw.InterviewError("New member folder is not set up (NEW_MEMBER_DIR).")
+    root = Path(base)
+    if not root.is_dir():
+        raise ivw.InterviewError("The new member folder is not available. Check that it is mounted at NEW_MEMBER_DIR.")
+    c = cfg()
+    now = settings.now_local(c.timezone)
+    req = ivw.requirements(m["membership_class"], m["response_type"])
+    dates = ivw.next_month_dates(now.date())
+    folder = root / str(now.year) / ivw.MONTHS[now.month - 1] / ivw.folder_name(
+        m["member_id"], m["last_name"], m["first_name"])
+    if root.resolve() not in folder.resolve().parents:
+        raise ivw.InterviewError("The member's name or ID # gives an invalid folder name.")
+    folder.mkdir(parents=True, exist_ok=True)
+    fields = {
+        "date": ivw.fmt_date(now.date()),
+        "name": " ".join(p for p in (m["first_name"], m["last_name"]) if p),
+        "address": ivw.address_text(m),
+        "location": ivw.station_text(m["fire_station"]),
+        "response_type": m["response_type"],
+        "email": m["email"],
+        "membership_class": m["membership_class"],
+        "drills": req["drills"], "meetings": req["meetings"],
+        "call_label": req["call_label"], "call_value": req["call_value"],
+        "membership_date": ivw.fmt_date(dates["membership"]),
+        "commissioners_date": ivw.fmt_date(dates["commissioners"]),
+        "physical_date": ivw.fmt_date(dates["physical"]),
+        "interviewers": c.interviewers,
+    }
+    from weasyprint import HTML  # imported lazily so the rest works without it
+
+    pdf = HTML(string=render_template("interview.html", f=fields), base_url=str(BASE_DIR)).write_pdf()
+    name = ivw.file_name(m["last_name"], m["first_name"], now)
+    target, n = folder / name, 1
+    while target.exists():  # never overwrite an earlier form
+        n += 1
+        target = folder / f"{Path(name).stem}_{n}.pdf"
+    tmp = target.with_name("." + target.name + ".tmp")
+    tmp.write_bytes(pdf)
+    os.replace(tmp, target)
+    return f"{target.parent.relative_to(root)}/{target.name}"
+
+
+def interview_after_save(values):
+    try:
+        where = create_interview(values)
+        flash(f"New member interview form saved: {where}", "ok")
+    except ivw.InterviewError as exc:
+        flash(f"Member saved, but no interview form was made: {exc}", "error")
+    except OSError as exc:
+        app.logger.warning("interview form failed: %s", exc)
+        flash(f"Member saved, but the interview form could not be written ({exc.__class__.__name__}: {exc.strerror or exc}).", "error")
 
 
 @app.route("/members/new", methods=["GET", "POST"])
@@ -579,6 +651,8 @@ def member_new():
             )
             get_db().commit()
             flash("Member added.", "ok")
+            if request.form.get("action") == "interview":
+                interview_after_save(values)
             if request.form.get("action") == "save_new":
                 return redirect(url_for("member_new"))
             return redirect(url_for("member_edit", member_id=cur.lastrowid))
@@ -606,6 +680,8 @@ def member_edit(member_id):
             )
             get_db().commit()
             flash("Saved.", "ok")
+            if request.form.get("action") == "interview":
+                interview_after_save(values)
             if request.form.get("action") == "save_new":
                 return redirect(url_for("member_new"))
             return redirect(url_for("member_edit", member_id=member_id))
@@ -672,7 +748,7 @@ def render_roster(inline):
         "ORDER BY status, last_name COLLATE NOCASE, first_name COLLATE NOCASE"
     ).fetchall()
     groups = [(status, list(items)) for status, items in groupby(rows, key=lambda r: r["status"])]
-    today = date.today()
+    today = settings.now_local(cfg().timezone).date()
     css = logo = None
     if inline:  # self-contained page for PDF / saved HTML
         css = (BASE_DIR / "static" / "roster.css").read_text()
@@ -688,7 +764,7 @@ def roster_pdf():
     from weasyprint import HTML  # imported lazily so the rest works without it
 
     pdf = HTML(string=render_roster(inline=True), base_url=str(BASE_DIR)).write_pdf()
-    name = f"CFD_Membership_Roster_{date.today():%Y%m%d}.pdf"
+    name = f"CFD_Membership_Roster_{settings.now_local(cfg().timezone):%Y%m%d}.pdf"
     return Response(pdf, mimetype="application/pdf",
                     headers={"Content-Disposition": f'inline; filename="{name}"'})
 

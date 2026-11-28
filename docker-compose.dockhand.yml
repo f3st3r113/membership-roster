@@ -22,3 +22,4 @@ services:
       CFD_ADMIN_USER: "admin"
       CFD_ADMIN_PASSWORD: "${CFD_ADMIN_PASSWORD:-}"
       CFD_COOKIE_SECURE: "${CFD_COOKIE_SECURE:-0}"
+      # NEW_MEMBER_DIR: "/nmd"      # New Member Interview folder; also mount a host folder at /nmd
