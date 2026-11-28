@@ -188,7 +188,7 @@ One-time setup, as a Microsoft 365 / Entra administrator:
 5. **Add three settings to the stack** (Dockhand environment): `SP_TENANT_ID`, `SP_CLIENT_ID`, `SP_CLIENT_SECRET`, and pass them to the
    container (see the commented `SP_...` lines in the compose files).
 6. **Check `config.yaml`:** `sharepoint_site_url`, `sharepoint_library` (the library's real name, usually `Documents`, which is
-   the one shown as *Shared Documents* in web addresses) and `sharepoint_folder`. Keep `General/TEST` until you are happy, then change it.
+   the one shown as *Shared Documents* in web addresses) and `sharepoint_folder`. Use something like `General/TEST` while trying things out, then switch to the real folder.
 
 The container needs outbound HTTPS to `login.microsoftonline.com` and `graph.microsoft.com`. Remember to replace the client
 secret before it expires, or SharePoint saves will start failing with a "sign-in failed" notice.

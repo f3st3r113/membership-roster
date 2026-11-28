@@ -74,4 +74,4 @@ storage: "auto"
 # (see the README). Files go to <library>/<sharepoint_folder>/<year>/<MM-Month>/<ID>_<Last>_<First>/.
 sharepoint_site_url: "https://cicerofd.sharepoint.com/sites/MembershipCommittee"
 sharepoint_library: "Documents"          # shows as "Shared Documents" in the web address
-sharepoint_folder: "General/TEST"        # TEST while trying this out; change to the real folder when ready
+sharepoint_folder: "General"             # folder inside the library; use e.g. "General/TEST" while trying things out
